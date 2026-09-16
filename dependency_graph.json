@@ -1,0 +1,245 @@
+{
+  "meta": {
+    "generatedAt": "2026-09-16T15:34:57.180Z",
+    "toolkits": [
+      "googlesuper",
+      "github"
+    ],
+    "toolCount": 6,
+    "nodeCount": 12,
+    "edgeCount": 12,
+    "method": "slot-ontology-join + fan-in-cap(5) + heuristic-producer-fallback"
+  },
+  "nodes": [
+    {
+      "id": "GOOGLESUPER_GMAIL_LIST_THREADS",
+      "kind": "tool",
+      "toolkit": "googlesuper",
+      "service": "gmail",
+      "name": "List Gmail Threads",
+      "description": "List email threads in the user's Gmail inbox matching a query"
+    },
+    {
+      "id": "GOOGLESUPER_GMAIL_REPLY_TO_THREAD",
+      "kind": "tool",
+      "toolkit": "googlesuper",
+      "service": "gmail",
+      "name": "Reply to Gmail Thread",
+      "description": "Send a reply within an existing Gmail thread"
+    },
+    {
+      "id": "GOOGLESUPER_PEOPLE_SEARCH_CONTACTS",
+      "kind": "tool",
+      "toolkit": "googlesuper",
+      "service": "people",
+      "name": "Search Contacts",
+      "description": "Search the user's Google Contacts by name to find matching people and their email addresses"
+    },
+    {
+      "id": "GOOGLESUPER_GMAIL_SEND_EMAIL",
+      "kind": "tool",
+      "toolkit": "googlesuper",
+      "service": "gmail",
+      "name": "Send Email",
+      "description": "Send a new email to a recipient's email address"
+    },
+    {
+      "id": "GITHUB_LIST_REPOSITORY_ISSUES",
+      "kind": "tool",
+      "toolkit": "github",
+      "service": "github",
+      "name": "List Repository Issues",
+      "description": "List issues for a GitHub repository"
+    },
+    {
+      "id": "GITHUB_CREATE_AN_ISSUE_COMMENT",
+      "kind": "tool",
+      "toolkit": "github",
+      "service": "github",
+      "name": "Create Issue Comment",
+      "description": "Create a comment on a GitHub issue"
+    },
+    {
+      "id": "INPUT:gmail.body",
+      "kind": "user_input",
+      "name": "body",
+      "prompt": "Reply body text"
+    },
+    {
+      "id": "INPUT:people.name",
+      "kind": "user_input",
+      "name": "name",
+      "prompt": "Name to search for"
+    },
+    {
+      "id": "INPUT:gmail.subject",
+      "kind": "user_input",
+      "name": "subject",
+      "prompt": "Provide subject"
+    },
+    {
+      "id": "INPUT:github.owner",
+      "kind": "user_input",
+      "name": "owner",
+      "prompt": "Provide owner"
+    },
+    {
+      "id": "INPUT:github.repo",
+      "kind": "user_input",
+      "name": "repo",
+      "prompt": "Provide repo"
+    },
+    {
+      "id": "INPUT:github.comment_body",
+      "kind": "user_input",
+      "name": "comment_body",
+      "prompt": "Text of the comment"
+    }
+  ],
+  "edges": [
+    {
+      "id": "e0",
+      "from": "GOOGLESUPER_GMAIL_LIST_THREADS",
+      "to": "GOOGLESUPER_GMAIL_REPLY_TO_THREAD",
+      "slot": "gmail.thread_id",
+      "param": "thread_id",
+      "paramPath": "thread_id",
+      "required": true,
+      "type": "structural",
+      "source": "schema",
+      "confidence": 0.8
+    },
+    {
+      "id": "e1",
+      "from": "INPUT:gmail.body",
+      "to": "GOOGLESUPER_GMAIL_REPLY_TO_THREAD",
+      "slot": "",
+      "param": "body",
+      "paramPath": "body",
+      "required": true,
+      "type": "user_input",
+      "source": "none",
+      "confidence": 1
+    },
+    {
+      "id": "e2",
+      "from": "INPUT:people.name",
+      "to": "GOOGLESUPER_PEOPLE_SEARCH_CONTACTS",
+      "slot": "",
+      "param": "name",
+      "paramPath": "name",
+      "required": true,
+      "type": "user_input",
+      "source": "none",
+      "confidence": 1
+    },
+    {
+      "id": "e3",
+      "from": "GOOGLESUPER_PEOPLE_SEARCH_CONTACTS",
+      "to": "GOOGLESUPER_GMAIL_SEND_EMAIL",
+      "slot": "people.email_address",
+      "param": "email",
+      "paramPath": "email",
+      "required": true,
+      "type": "structural",
+      "source": "schema",
+      "confidence": 0.8
+    },
+    {
+      "id": "e4",
+      "from": "INPUT:gmail.subject",
+      "to": "GOOGLESUPER_GMAIL_SEND_EMAIL",
+      "slot": "",
+      "param": "subject",
+      "paramPath": "subject",
+      "required": true,
+      "type": "user_input",
+      "source": "none",
+      "confidence": 1
+    },
+    {
+      "id": "e5",
+      "from": "INPUT:gmail.body",
+      "to": "GOOGLESUPER_GMAIL_SEND_EMAIL",
+      "slot": "",
+      "param": "body",
+      "paramPath": "body",
+      "required": true,
+      "type": "user_input",
+      "source": "none",
+      "confidence": 1
+    },
+    {
+      "id": "e6",
+      "from": "INPUT:github.owner",
+      "to": "GITHUB_LIST_REPOSITORY_ISSUES",
+      "slot": "github.owner",
+      "param": "owner",
+      "paramPath": "owner",
+      "required": true,
+      "type": "user_input",
+      "source": "none",
+      "confidence": 1
+    },
+    {
+      "id": "e7",
+      "from": "INPUT:github.repo",
+      "to": "GITHUB_LIST_REPOSITORY_ISSUES",
+      "slot": "github.repo",
+      "param": "repo",
+      "paramPath": "repo",
+      "required": true,
+      "type": "user_input",
+      "source": "none",
+      "confidence": 1
+    },
+    {
+      "id": "e8",
+      "from": "INPUT:github.owner",
+      "to": "GITHUB_CREATE_AN_ISSUE_COMMENT",
+      "slot": "github.owner",
+      "param": "owner",
+      "paramPath": "owner",
+      "required": true,
+      "type": "user_input",
+      "source": "none",
+      "confidence": 1
+    },
+    {
+      "id": "e9",
+      "from": "INPUT:github.repo",
+      "to": "GITHUB_CREATE_AN_ISSUE_COMMENT",
+      "slot": "github.repo",
+      "param": "repo",
+      "paramPath": "repo",
+      "required": true,
+      "type": "user_input",
+      "source": "none",
+      "confidence": 1
+    },
+    {
+      "id": "e10",
+      "from": "GITHUB_LIST_REPOSITORY_ISSUES",
+      "to": "GITHUB_CREATE_AN_ISSUE_COMMENT",
+      "slot": "github.issue_number",
+      "param": "issue_number",
+      "paramPath": "issue_number",
+      "required": true,
+      "type": "structural",
+      "source": "schema",
+      "confidence": 0.8
+    },
+    {
+      "id": "e11",
+      "from": "INPUT:github.comment_body",
+      "to": "GITHUB_CREATE_AN_ISSUE_COMMENT",
+      "slot": "",
+      "param": "comment_body",
+      "paramPath": "comment_body",
+      "required": true,
+      "type": "user_input",
+      "source": "none",
+      "confidence": 1
+    }
+  ]
+}

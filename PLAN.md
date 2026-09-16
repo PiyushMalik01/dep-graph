@@ -14,30 +14,39 @@ Spec: C:\code\dep-graph\readme.md. Submit email: arpit13walia@gmail.com
 ## Plan (phases)
 
 - [x] Phase 0 — Setup
-  - [x] Got COMPOSIO_API_KEY, ran scaffold.sh → .env written
-  - [ ] `bun add @composio/core` (running in background as of last update)
-  - [ ] `bun install`
+  - [x] Got COMPOSIO_API_KEY, ran scaffold.sh → .env written (key rotated twice by user so far, both rejected 401 by Composio API — see BLOCKER below)
+  - [x] `bun add @composio/core` (first attempt failed: corrupt cache/integrity error; fixed with `bun pm cache rm` then retry)
+  - [x] `bun install`
+  - [x] git repo initialized, .gitignore added (node_modules/.env excluded), initial commit made
 
-- [ ] Phase 1 — Fetch tools
-  - [ ] `src/fetch-tools.ts`: generalize src/index.ts, loop toolkits ["googlesuper","github"], fetch via `composio.tools.getRawComposioTools`, cache to `data/googlesuper_tools.json`, `data/github_tools.json`
-  - [ ] Verify counts (~473 / ~893), watch for silent pagination caps
-  - [ ] CHECKPOINT: inspect one real tool object's shape (input/output schema richness) before building the matcher — decide how much weight structural vs heuristic vs LLM pass gets
+- [~] Phase 1 — Fetch tools (CODE DONE, BLOCKED ON VALID API KEY)
+  - [x] `src/fetch-tools.ts` written: loops ["googlesuper","github"], calls `composio.tools.getRawComposioTools`, caches to `data/<toolkit>_tools.json`, skips refetch unless `--force`, throws if 0 tools returned (catches slug/casing issues)
+  - [ ] **BLOCKER**: both API keys given so far return `401 Invalid API key` directly from Composio's server (not a local/env-loading bug — verified `.env` has correct key each time). Need a working key from https://dashboard.composio.dev before this can run for real.
+  - [ ] Once unblocked: verify counts (~473 googlesuper / ~893 github), watch for silent pagination caps
+  - [ ] CHECKPOINT: inspect one real tool object's shape (input/output schema richness) — decide how much weight structural vs heuristic vs LLM pass gets. NOTE: confirmed via SDK source (`node_modules/@composio/core/src/types/tool.types.ts` ToolSchema) that real shape is `{slug, name, description, inputParameters, outputParameters, toolkit:{slug,name}, tags, version, ...}` — inputParameters/outputParameters are optional JSON-Schema objects, normalized to `undefined` when empty. Code already built against this exact shape.
 
-- [ ] Phase 2 — Slot ontology (`src/ontology.ts`)
-  - [ ] Normalizer (case/snake/camel split, strip prefixes/suffixes, singularize)
-  - [ ] Service inference for googlesuper's merged services (gmail/drive/calendar/sheets/docs/people)
-  - [ ] Canonical slot table (~30 entries), namespaced by service (e.g. gmail.thread_id, github.owner, people.email_address)
-  - [ ] Stoplist for generic param names (id, name, query, page, cursor, etc.) — critical to avoid edge explosion
-  - [ ] Tag human-authored/free-text params as `human` class → become user-input nodes
+- [x] Phase 2 — Slot ontology (`src/ontology.ts`) — DONE, tested
+  - [x] Normalizer (camelCase split, strip prefixes, naive singularize)
+  - [x] Service inference for googlesuper's merged services (gmail/drive/calendar/sheets/docs/people) — **bug fixed**: word-boundary regex `\bgmail\b` doesn't match inside `_`-joined slugs like `GOOGLESUPER_GMAIL_SEND_EMAIL` because `_` counts as a word char; fixed by replacing `_` with space before matching.
+  - [x] Canonical slot table (~30 entries), namespaced by service
+  - [x] Stoplist for generic param names
+  - [x] `isHumanParam` for free-text fields → user-input nodes
 
-- [ ] Phase 3 — Deterministic edges (`src/extract.ts`, `src/build-graph.ts`)
-  - [ ] Extract requires[]/produces[] per tool (flatten JSON schema, depth-limited)
-  - [ ] Map leaves through ontology → slot or null
-  - [ ] Build producer/consumer inverted indexes per slot
-  - [ ] Producer fallback heuristic when outputParameters missing (verb+noun match)
-  - [ ] Emit edges with fan-in cap (top 5 producers per consumer+slot), ranked by schema>heuristic, discovery verbs > GET > CREATE, same-service preferred
-  - [ ] Emit `user_input` nodes/edges for slots with no producer or human-classed params
-  - [ ] Output: `dependency_graph.json` (nodes/edges) + `slots.json`
+- [x] Phase 3 — Deterministic edges (`src/extract.ts`, `src/build-graph.ts`) — DONE, tested against fixture data
+  - [x] `extract.ts`: flattenSchema walks JSON Schema (objects/arrays, depth-limited to 3, handles anyOf/oneOf)
+  - [x] Map leaves through ontology → slot or null
+  - [x] Producer/consumer inverted index per slot
+  - [x] Heuristic producer fallback when outputParameters missing/empty (verb+noun match)
+  - [x] Fan-in cap (top 5 producers per consumer+slot), ranked by schema>heuristic, discovery verbs>GET>CREATE, same-service preferred
+  - [x] `user_input` nodes/edges for slots with no producer or human-classed params — **bug fixed**: node id was double-prefixing (`INPUT:github.github.owner`) when a slot was already namespaced; fixed template to use slot directly when present.
+  - [x] Output: `dependency_graph.json` + `slots.json` — verified against hand-written fixture data (`data/*.json`, 6 tools) that BOTH readme examples appear as real edges: `GOOGLESUPER_GMAIL_LIST_THREADS → GOOGLESUPER_GMAIL_REPLY_TO_THREAD` (thread_id) and `GOOGLESUPER_PEOPLE_SEARCH_CONTACTS → GOOGLESUPER_GMAIL_SEND_EMAIL` (email_address, the semantic name→contacts→send-email chain).
+  - **IMPORTANT**: `data/googlesuper_tools.json` and `data/github_tools.json` currently contain HAND-WRITTEN FIXTURE DATA (6 fake tools total), not real Composio API data — used only to validate the pipeline logic end-to-end while blocked on Phase 1's API key issue. MUST re-run `bun run fetch --force` once a valid key exists, then re-run `bun run graph` and `bun run viz` on the real ~1366-tool dataset before submitting. Do not submit with fixture data in place.
+
+- [x] Phase 5 — Visualization (`src/visualize.ts` → `graph.html`) — DONE, opened and smoke-tested
+  - [x] Self-contained HTML, data inlined as `const DATA = {...}`
+  - [x] vis-network via CDN (cdnjs), color by toolkit/kind, edge style by type
+  - [x] Showcase mode (readme's 2 examples + 1-hop neighborhood) vs Full graph toggle, edge-type checkboxes, search-by-slug — **bug fixed**: checkbox handlers always called `showcase()` even in full-graph mode; added `mode` tracking so toggles re-render whichever view is active.
+  - [x] npm/bun scripts added: `fetch`, `graph`, `viz`, `all` (in package.json)
 
 - [ ] Phase 4 — LLM semantic pass (`src/semantic.ts`, `--llm` flag, optional/additive)
   - [ ] Resolver discovery: pre-filter candidate lookup tools, batch-prompt via OpenRouter to find name→canonical-value resolvers (covers readme's dense example)
@@ -65,3 +74,4 @@ Spec: C:\code\dep-graph\readme.md. Submit email: arpit13walia@gmail.com
 
 ## Progress log
 - 2026-09-16: Repo read, plan drafted (Opus Plan agent), scaffold.sh run, .env created, bun add @composio/core kicked off.
+- 2026-09-16 (later): bun add fixed (cache clear). Git repo initialized + first commit. Both real API keys rejected (401) — Phase 1 blocked on a valid Composio dashboard key. Built full backbone (ontology.ts, extract.ts, build-graph.ts, visualize.ts) and validated it end-to-end against hand-written fixture data standing in for the real tool JSON — both readme examples (thread_id precursor chain, name→contacts→email semantic chain) show up correctly as edges. graph.html opens and renders. Fixed 3 bugs along the way (word-boundary regex on snake_case slugs, doubled input-node id prefix, checkbox mode-tracking in viewer). NEXT: get valid API key → `bun run fetch --force` → `bun run graph` → `bun run viz` on real ~1366-tool data → Phase 4 (LLM semantic pass, optional) → Phase 6 (NOTES.md + submit).

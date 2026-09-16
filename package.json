@@ -1,4 +1,10 @@
 {
+  "scripts": {
+    "fetch": "bun run src/fetch-tools.ts",
+    "graph": "bun run src/build-graph.ts",
+    "viz": "bun run src/visualize.ts",
+    "all": "bun run src/fetch-tools.ts && bun run src/build-graph.ts && bun run src/visualize.ts"
+  },
   "dependencies": {
     "@anthropic-ai/claude-agent-sdk": "^0.2.87",
     "@composio/core": "^0.18.1",

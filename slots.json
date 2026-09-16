@@ -1,0 +1,59 @@
+{
+  "gmail.thread_id": {
+    "producers": [
+      "GOOGLESUPER_GMAIL_LIST_THREADS"
+    ],
+    "consumers": [
+      "GOOGLESUPER_GMAIL_REPLY_TO_THREAD.thread_id"
+    ]
+  },
+  "gmail.message_id": {
+    "producers": [
+      "GOOGLESUPER_GMAIL_REPLY_TO_THREAD",
+      "GOOGLESUPER_GMAIL_SEND_EMAIL"
+    ],
+    "consumers": []
+  },
+  "people.contact_id": {
+    "producers": [
+      "GOOGLESUPER_PEOPLE_SEARCH_CONTACTS"
+    ],
+    "consumers": []
+  },
+  "people.email_address": {
+    "producers": [
+      "GOOGLESUPER_PEOPLE_SEARCH_CONTACTS"
+    ],
+    "consumers": [
+      "GOOGLESUPER_GMAIL_SEND_EMAIL.email"
+    ]
+  },
+  "github.issue_number": {
+    "producers": [
+      "GITHUB_LIST_REPOSITORY_ISSUES"
+    ],
+    "consumers": [
+      "GITHUB_CREATE_AN_ISSUE_COMMENT.issue_number"
+    ]
+  },
+  "github.comment_id": {
+    "producers": [
+      "GITHUB_CREATE_AN_ISSUE_COMMENT"
+    ],
+    "consumers": []
+  },
+  "github.owner": {
+    "producers": [],
+    "consumers": [
+      "GITHUB_LIST_REPOSITORY_ISSUES.owner",
+      "GITHUB_CREATE_AN_ISSUE_COMMENT.owner"
+    ]
+  },
+  "github.repo": {
+    "producers": [],
+    "consumers": [
+      "GITHUB_LIST_REPOSITORY_ISSUES.repo",
+      "GITHUB_CREATE_AN_ISSUE_COMMENT.repo"
+    ]
+  }
+}
