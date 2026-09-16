@@ -2,6 +2,9 @@
   "ads.customer_id": {
     "producers": [
       "GOOGLESUPER_ADD_OR_REMOVE_TO_CUSTOMER_LIST (heuristic)",
+      "GOOGLESUPER_CREATE_CUSTOMER_LIST (heuristic)",
+      "GOOGLESUPER_GET_CUSTOMER_LISTS (heuristic)",
+      "GOOGLESUPER_LIST_ACCESSIBLE_CUSTOMERS (heuristic)",
       "GOOGLESUPER_LIST_GOOGLE_ADS_LINKS (incidental)",
       "GOOGLESUPER_LIST_SUB_ACCOUNTS (incidental)"
     ],
@@ -42,7 +45,6 @@
       "GOOGLESUPER_LIST_ACCOUNTS (heuristic)",
       "GOOGLESUPER_LIST_ACCOUNTS_V1_BETA (heuristic)",
       "GOOGLESUPER_CREATE_ROLLUP_PROPERTY (incidental)",
-      "GOOGLESUPER_GET_CURRENT_USER (incidental)",
       "GOOGLESUPER_GET_PROPERTY (incidental)",
       "GOOGLESUPER_LIST_ACCOUNT_SUMMARIES (incidental)",
       "GOOGLESUPER_LIST_PROPERTIES_FILTERED (incidental)",
@@ -55,56 +57,20 @@
   },
   "analytics.property": {
     "producers": [
-      "GOOGLESUPER_ADD_PROPERTY (heuristic)",
-      "GOOGLESUPER_GET_FILE_PROPERTY (heuristic)",
       "GOOGLESUPER_GET_PROPERTY",
       "GOOGLESUPER_GET_PROPERTY_QUOTAS_SNAPSHOT (heuristic)",
-      "GOOGLESUPER_LIST_FILE_PROPERTIES (heuristic)",
       "GOOGLESUPER_LIST_PROPERTIES",
       "GOOGLESUPER_LIST_PROPERTIES_FILTERED",
       "GOOGLESUPER_UPDATE_PROPERTY",
-      "GOOGLESUPER_BATCH_EXECUTE (incidental)",
-      "GOOGLESUPER_BULK_INSERT_TASKS (incidental)",
-      "GOOGLESUPER_COPY_DOCUMENT (incidental)",
-      "GOOGLESUPER_COPY_FILE (incidental)",
-      "GOOGLESUPER_COPY_FILE_ADVANCED (incidental)",
-      "GOOGLESUPER_CREATE_FILE (incidental)",
-      "GOOGLESUPER_CREATE_FILE_FROM_TEXT (incidental)",
-      "GOOGLESUPER_CREATE_FOLDER (incidental)",
       "GOOGLESUPER_CREATE_ROLLUP_PROPERTY (incidental)",
-      "GOOGLESUPER_CREATE_SHORTCUT_TO_FILE (incidental)",
-      "GOOGLESUPER_EDIT_FILE (incidental)",
-      "GOOGLESUPER_FIND_FILE (incidental)",
-      "GOOGLESUPER_FIND_FOLDER (incidental)",
-      "GOOGLESUPER_GET_DRIVE_FILE_METADATA (incidental)",
-      "GOOGLESUPER_GET_FILE_METADATA (incidental)",
-      "GOOGLESUPER_GET_TASK (incidental)",
-      "GOOGLESUPER_INSERT_TASK (incidental)",
-      "GOOGLESUPER_LIST_ACCOUNT_SUMMARIES (incidental)",
-      "GOOGLESUPER_LIST_ALL_TASKS (incidental)",
-      "GOOGLESUPER_LIST_CHANGES (incidental)",
-      "GOOGLESUPER_LIST_TASKS (incidental)",
-      "GOOGLESUPER_MOVE_FILE (incidental)",
-      "GOOGLESUPER_MOVE_TASK (incidental)",
-      "GOOGLESUPER_PATCH_TASK (incidental)",
-      "GOOGLESUPER_SEARCH_DOCUMENTS (incidental)",
-      "GOOGLESUPER_TRASH_FILE (incidental)",
-      "GOOGLESUPER_UPDATE_FILE_PUT (incidental)",
-      "GOOGLESUPER_UPDATE_TASK (incidental)",
-      "GOOGLESUPER_UPDATE_TASK_FULL (incidental)",
-      "GOOGLESUPER_UPLOAD_FILE (incidental)",
-      "GOOGLESUPER_UPLOAD_FROM_URL (incidental)",
-      "GOOGLESUPER_UPLOAD_UPDATE_FILE (incidental)"
+      "GOOGLESUPER_LIST_ACCOUNT_SUMMARIES (incidental)"
     ],
     "consumers": [
-      "GOOGLESUPER_BULK_INSERT_TASKS.parent?",
-      "GOOGLESUPER_COPY_FILE_ADVANCED.parents?",
       "GOOGLESUPER_CREATE_AUDIENCE_EXPORT.parent",
       "GOOGLESUPER_CREATE_AUDIENCE_LIST.parent",
       "GOOGLESUPER_CREATE_CUSTOM_DIMENSION.parent",
       "GOOGLESUPER_CREATE_CUSTOM_METRIC.parent",
       "GOOGLESUPER_CREATE_EXPANDED_DATA_SET.parent",
-      "GOOGLESUPER_CREATE_FILE.parents?",
       "GOOGLESUPER_CREATE_RECURRING_AUDIENCE_LIST.parent",
       "GOOGLESUPER_CREATE_REPORT_TASK.parent",
       "GOOGLESUPER_GET_AUDIENCE.propertyId",
@@ -121,24 +87,11 @@
       "GOOGLESUPER_LIST_DATA_STREAMS.parent",
       "GOOGLESUPER_LIST_DV360_AD_LINKS.parent",
       "GOOGLESUPER_LIST_DV360_LINK_PROPOSALS.parent",
-      "GOOGLESUPER_LIST_EVENT_CREATE_RULES.parent",
       "GOOGLESUPER_LIST_EXPANDED_DATA_SETS.parent",
-      "GOOGLESUPER_LIST_FIREBASE_LINKS.parent",
-      "GOOGLESUPER_LIST_GOOGLE_ADS_LINKS.parent",
-      "GOOGLESUPER_LIST_KEY_EVENTS.parent",
-      "GOOGLESUPER_LIST_MEASUREMENT_PROTOCOL_SECRETS.parent",
-      "GOOGLESUPER_LIST_PARTICIPANTS.parent",
-      "GOOGLESUPER_LIST_RECORDINGS.parent",
       "GOOGLESUPER_LIST_RECURRING_AUDIENCE_LISTS.parent",
-      "GOOGLESUPER_LIST_REPORTING_DATA_ANNOTATIONS.parent",
-      "GOOGLESUPER_LIST_REPORT_TASKS.parent",
       "GOOGLESUPER_LIST_SEARCH_ADS360_LINKS.parent",
-      "GOOGLESUPER_LIST_SK_AD_NETWORK_CONVERSION_VALUE_SCHEMAS.parent",
-      "GOOGLESUPER_LIST_SUBPROPERTY_EVENT_FILTERS.parent",
       "GOOGLESUPER_LIST_SUBPROPERTY_SYNC_CONFIGS.parent",
-      "GOOGLESUPER_MOVE_TASK.parent?",
-      "GOOGLESUPER_UPDATE_PROPERTY.parent?",
-      "GOOGLESUPER_UPDATE_TASK_FULL.parent?"
+      "GOOGLESUPER_UPDATE_PROPERTY.parent?"
     ]
   },
   "calendar.calendar_id": {
@@ -147,6 +100,7 @@
       "GOOGLESUPER_DUPLICATE_CALENDAR",
       "GOOGLESUPER_GET_CALENDAR (heuristic)",
       "GOOGLESUPER_GET_CALENDAR_PROFILE (heuristic)",
+      "GOOGLESUPER_LIST_CALENDAR_RESOURCES (heuristic)",
       "GOOGLESUPER_LIST_CALENDARS",
       "GOOGLESUPER_PATCH_CALENDAR",
       "GOOGLESUPER_EVENTS_LIST_ALL_CALENDARS (incidental)"
@@ -192,7 +146,6 @@
       "GOOGLESUPER_EVENTS_LIST_ALL_CALENDARS",
       "GOOGLESUPER_FIND_EVENT",
       "GOOGLESUPER_GET_KEY_EVENT (heuristic)",
-      "GOOGLESUPER_LIST_CONVERSION_EVENTS (heuristic)",
       "GOOGLESUPER_LIST_EVENT_CREATE_RULES (heuristic)",
       "GOOGLESUPER_LIST_KEY_EVENTS (heuristic)",
       "GOOGLESUPER_LIST_SUBPROPERTY_EVENT_FILTERS (heuristic)",
@@ -4220,8 +4173,7 @@
     "producers": [
       "GOOGLESUPER_CREATE_FILTER",
       "GOOGLESUPER_GET_FILTER",
-      "GOOGLESUPER_LIST_FILTERS",
-      "GOOGLESUPER_LIST_SUBPROPERTY_EVENT_FILTERS (heuristic)"
+      "GOOGLESUPER_LIST_FILTERS"
     ],
     "consumers": [
       "GOOGLESUPER_DELETE_FILTER.filter_id"
@@ -4387,29 +4339,11 @@
   },
   "people.contact_id": {
     "producers": [
-      "GOOGLESUPER_CREATE_CUSTOMER_LIST (incidental)",
-      "GOOGLESUPER_GET_CONTACTS (incidental)",
-      "GOOGLESUPER_GET_CONVERSION_ACTION_TAG_SNIPPETS (incidental)",
-      "GOOGLESUPER_GET_CUSTOMER_LISTS (incidental)",
-      "GOOGLESUPER_LIST_ACCESSIBLE_CUSTOMERS (incidental)",
-      "GOOGLESUPER_LIST_CALENDAR_RESOURCES (incidental)",
-      "GOOGLESUPER_LIST_SUB_ACCOUNTS (incidental)",
-      "GOOGLESUPER_MUTATE_AD_GROUP_CRITERIA (incidental)",
-      "GOOGLESUPER_MUTATE_AD_GROUPS (incidental)",
-      "GOOGLESUPER_MUTATE_CAMPAIGNS (incidental)",
-      "GOOGLESUPER_MUTATE_CAMPAIGNS_V2 (incidental)"
+      "GOOGLESUPER_GET_CONTACTS (incidental)"
     ],
     "consumers": [
-      "GOOGLESUPER_ADD_OR_REMOVE_TO_CUSTOMER_LIST.resource_name",
       "GOOGLESUPER_GET_CONTACTS.resource_name?",
-      "GOOGLESUPER_GET_PEOPLE.resource_name?",
-      "GOOGLESUPER_MUTATE_AD_GROUP_CRITERIA.resource_name?",
-      "GOOGLESUPER_MUTATE_AD_GROUPS.resource_name?",
-      "GOOGLESUPER_MUTATE_CAMPAIGNS.resource_name?",
-      "GOOGLESUPER_MUTATE_CAMPAIGNS.resource_name?",
-      "GOOGLESUPER_MUTATE_CAMPAIGNS_V2.resource_name?",
-      "GOOGLESUPER_MUTATE_CAMPAIGNS_V2.resource_name?",
-      "GOOGLESUPER_MUTATE_PORTFOLIO_BIDDING_STRATEGIES.resource_name?"
+      "GOOGLESUPER_GET_PEOPLE.resource_name?"
     ]
   },
   "people.email_address": {
@@ -4542,7 +4476,6 @@
   },
   "sheets.range": {
     "producers": [
-      "GOOGLESUPER_CREATE_NAMED_RANGE (heuristic)",
       "GOOGLESUPER_BATCH_GET (incidental)",
       "GOOGLESUPER_BATCH_GET_SPREADSHEET_VALUES (incidental)",
       "GOOGLESUPER_BATCH_UPDATE (incidental)",
@@ -4827,7 +4760,6 @@
   "tasks.task_id": {
     "producers": [
       "GOOGLESUPER_BULK_INSERT_TASKS",
-      "GOOGLESUPER_CREATE_REPORT_TASK (heuristic)",
       "GOOGLESUPER_CREATE_TASK_LIST (heuristic)",
       "GOOGLESUPER_GET_REPORT_TASK (heuristic)",
       "GOOGLESUPER_GET_TASK",

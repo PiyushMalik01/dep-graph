@@ -39,13 +39,13 @@ const SERVICE_KEYWORDS: Record<Exclude<Service, "github" | "unknown">, string[]>
   people: ["contact", "contacts", "people", "person", "connection", "connections", "othercontact"],
   // googlesuper also bundles Analytics, Ads, Maps and Meet; without these rows
   // ~90 of its tools resolved to "unknown".
-  analytics: ["property", "properties", "audience", "audiences", "dimension", "dimensions", "metric", "metrics", "report", "reports", "stream", "streams", "adsense", "bigquery", "dv360", "rollup", "subproperty", "attribution", "signals", "account", "accounts"],
+  analytics: ["conversion", "property", "properties", "audience", "audiences", "dimension", "dimensions", "metric", "metrics", "report", "reports", "stream", "streams", "adsense", "bigquery", "dv360", "rollup", "subproperty", "attribution", "signals", "account", "accounts"],
   ads: ["campaign", "campaigns", "ad", "ads", "bidding", "budget", "budgets", "asset", "assets", "customer", "callout", "mutate", "conversion"],
   maps: ["geocode", "geocoding", "place", "places", "direction", "directions", "distance", "tile", "nearby", "maps", "map", "aerial", "route", "routes"],
   meet: ["meet", "conference", "participant", "participants", "space", "spaces", "transcript", "recording"],
 };
 
-export function inferService(toolSlug: string, toolkitSlug: string, description: string): Service {
+export function inferService(toolSlug: string, toolkitSlug: string, description: string, inputNames: string[] = []): Service {
   // toolkit wins outright: a GitHub tool is never reclassified just because its
   // description mentions "file" or "calendar".
   if (toolkitSlug.toLowerCase() === "github") return "github";
@@ -58,10 +58,20 @@ export function inferService(toolSlug: string, toolkitSlug: string, description:
   // services, or votes when the slug names no service at all. Weighting slug 2x
   // was not enough: GOOGLESUPER_SEARCH_PEOPLE has one slug hit ("people") but a
   // description full of "email"/"message", and was filed under gmail.
+  // entity-qualified id inputs are the strongest evidence of all: a tool taking
+  // spreadsheet_id is a Sheets tool even when its slug says APPEND_DIMENSION
+  // (an Analytics word), and DELETE_REPLY taking file_id is a Drive tool.
+  const paramVotes = new Map<Service, number>();
+  for (const name of inputNames) {
+    const n = normalizeLeaf(name);
+    const def = SLOT_TABLE.find((d) => GOOGLE_SERVICES.has(d.service) && d.service !== "people" && !d.homeOnly && d.patterns.some((re) => re.test(n)));
+    if (def) paramVotes.set(def.service, (paramVotes.get(def.service) ?? 0) + 1);
+  }
+
   let best: Service = "unknown";
   let bestScore: [number, number] = [0, 0];
   for (const [service, keywords] of Object.entries(SERVICE_KEYWORDS)) {
-    let slugScore = 0;
+    let slugScore = 2 * (paramVotes.get(service as Service) ?? 0);
     let descScore = 0;
     for (const kw of keywords) {
       if (slugSet.has(kw)) slugScore++;
@@ -165,6 +175,9 @@ interface SlotDef {
   slot: string;
   service: Service;
   patterns: RegExp[];
+  // generic names (`parent`, `resource_name`) that only mean this slot inside
+  // its own service; they are skipped by the cross-service fallback tiers.
+  homeOnly?: boolean;
   // entity noun(s) used by the heuristic producer fallback when a tool has no
   // declared outputParameters — matched against slug tokens (singular form;
   // plurals are derived automatically). Pipe-separate genuine synonyms.
@@ -199,7 +212,7 @@ const SLOT_TABLE: SlotDef[] = [
   { slot: "sheets.spreadsheet_id", service: "sheets", patterns: [/^spreadsheet_id$/], noun: "spreadsheet" },
   { slot: "sheets.sheet_id", service: "sheets", patterns: [/^sheet_id$/, /^gid$/], noun: "sheet" },
   { slot: "sheets.sheet_name", service: "sheets", patterns: [/^sheet_name$/, /^sheet_title$/], noun: "sheet" },
-  { slot: "sheets.range", service: "sheets", patterns: [/^range$/, /^a1_range$/, /^cell_range$/], noun: "range" },
+  { slot: "sheets.range", service: "sheets", patterns: [/^range$/, /^a1_range$/, /^cell_range$/], noun: "range", homeOnly: true },
 
   // ---- docs / slides / forms ----
   { slot: "docs.document_id", service: "docs", patterns: [/^document_id$/, /^doc_id$/], noun: "document" },
@@ -217,7 +230,8 @@ const SLOT_TABLE: SlotDef[] = [
   { slot: "photos.media_item_id", service: "photos", patterns: [/^media_item_id$/], noun: "mediaitem|media" },
 
   // ---- people / contacts (cross-service: name -> email resolution) ----
-  { slot: "people.contact_id", service: "people", patterns: [/^contact_id$/, /^person_id$/, /^resource_name$/], noun: "contact" },
+  { slot: "people.contact_id", service: "people", patterns: [/^contact_id$/, /^person_id$/], noun: "contact" },
+  { slot: "people.contact_id", service: "people", patterns: [/^resource_name$/], noun: "contact", homeOnly: true },
   {
     slot: "people.email_address",
     service: "people",
@@ -229,8 +243,8 @@ const SLOT_TABLE: SlotDef[] = [
   // ---- analytics / ads / meet ----
   // GA admin APIs address everything by resource name ("properties/123"),
   // passed as `parent` or `property`.
-  { slot: "analytics.property", service: "analytics", patterns: [/^property_id$/, /^parent$/, /^property$/], noun: "property" },
-  { slot: "analytics.account", service: "analytics", patterns: [/^account_id$/, /^account$/], noun: "account" },
+  { slot: "analytics.property", service: "analytics", patterns: [/^property_id$/, /^parent$/, /^property$/], noun: "property", homeOnly: true },
+  { slot: "analytics.account", service: "analytics", patterns: [/^account_id$/, /^account$/], noun: "account", homeOnly: true },
   { slot: "ads.customer_id", service: "ads", patterns: [/^customer_id$/], noun: "customer" },
   { slot: "meet.conference_record_id", service: "meet", patterns: [/^conference_record_id$/, /^conference_record$/], noun: "conference" },
   { slot: "meet.space_name", service: "meet", patterns: [/^space_name$/, /^space_id$/], noun: "space" },
@@ -326,7 +340,7 @@ export function resolveSlot(service: Service, leafName: string): string | null {
 
   for (const inTier of tiers) {
     for (const def of SLOT_TABLE) {
-      if (!inTier(def)) continue;
+      if (!inTier(def) || (def.homeOnly && def.service !== service)) continue;
       if (def.patterns.some((re) => re.test(n))) return def.slot;
     }
   }
@@ -410,9 +424,8 @@ export function tokenNamesNoun(token: string, noun: string): boolean {
 }
 
 /** Slots a tool of this service could plausibly produce — the search space for
- *  the heuristic producer fallback. Mirrors resolveSlot's tiering so a Gmail
- *  tool is never credited as a producer of `github.repo`. */
+ *  the heuristic producer fallback. Own service only: a slug-noun guess is too
+ *  weak to cross services (Docs' CREATE_NAMED_RANGE is not a source of sheets.range). */
 export function slotsForService(service: Service): string[] {
-  if (service === "github") return SLOT_TABLE.filter((d) => d.service === "github").map((d) => d.slot);
-  return SLOT_TABLE.filter((d) => GOOGLE_SERVICES.has(d.service)).map((d) => d.slot);
+  return [...new Set(SLOT_TABLE.filter((d) => d.service === service).map((d) => d.slot))];
 }

@@ -99,13 +99,14 @@ function docRefsIn(text: string, self: string, slugs: Set<string>): string[] {
 function buildToolInfo(t: RawTool, slugs: Set<string>): ToolInfo {
   const toolkit = t.toolkit?.slug ?? "unknown";
   const description = t.description ?? "";
-  const service = inferService(t.slug, toolkit, description);
+  const inputLeaves = flattenSchema(t.inputParameters as never);
+  const service = inferService(t.slug, toolkit, description, inputLeaves.map((l) => l.name));
   const entity = slugEntity(t.slug);
 
   // every input leaf that resolves to a slot is a dependency, required or not:
   // SEND_EMAIL's recipient_email is optional only because "one of to/cc/bcc" is.
   // required-but-unresolvable leaves are kept too, as ask-the-user inputs.
-  const requires = flattenSchema(t.inputParameters as never)
+  const requires = inputLeaves
     .map((l) => ({
       ...l,
       slot: resolveSlot(service, l.name),

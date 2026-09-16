@@ -4,222 +4,103 @@ interface GNode {
   id: string;
   kind: "tool" | "user_input";
   toolkit?: string;
+  service?: string;
   name: string;
   description?: string;
   prompt?: string;
 }
-interface GEdge { id: string; from: string; to: string; slot: string; param: string; type: string; reason?: string; confidence?: number }
+interface GEdge { from: string; to: string; slot: string; param: string; type: string; required: boolean }
 
-const graph: { meta: Record<string, unknown>; nodes: GNode[]; edges: GEdge[] } = JSON.parse(
-  await readFile("dependency_graph.json", "utf-8")
-);
+const graph: { meta: { toolCount: number; nodeCount: number; edgeCount: number }; nodes: GNode[]; edges: GEdge[] } =
+  JSON.parse(await readFile("dependency_graph.json", "utf-8"));
 
 /**
- * Showcase seeds for the default view: the readme's two worked examples.
- *
- * These are selected by *semantics*, not by hardcoded slugs. Composio's real
- * slugs are e.g. GOOGLESUPER_LIST_THREADS / GOOGLESUPER_REPLY_TO_EMAIL_THREAD —
- * note there is no per-service segment — so any list of literal slugs written
- * ahead of a real fetch is a guess that silently renders an empty page when it
- * misses. Instead we look for an edge carrying the right *slot* into a consumer
- * with the right verb, which holds regardless of how the slugs are spelled.
+ * The readme's two worked examples, picked by *semantics* rather than literal
+ * slugs: the consumer of an edge carrying the slot into a tool with the right verb.
  */
-const EXAMPLES = [
-  { label: "thread_id precursor", slot: "gmail.thread_id", consumer: /REPLY|RESPOND/i },
-  { label: "name -> contact -> email", slot: "people.email_address", consumer: /SEND|COMPOSE|CREATE_?DRAFT|INVITE/i },
+const EXAMPLE_RULES = [
+  { label: "needs a thread_id, which listing threads provides", slot: "gmail.thread_id", consumer: /REPLY/i },
+  { label: "needs an email address, which a contacts lookup by name provides", slot: "people.email_address", consumer: /SEND_EMAIL$/i },
 ];
 
-function pickShowcaseSeeds(): { seeds: string[]; notes: string[] } {
-  const seeds = new Set<string>();
-  const notes: string[] = [];
-
-  for (const ex of EXAMPLES) {
-    const onSlot = graph.edges.filter((e) => e.slot === ex.slot && e.type !== "user_input");
-    const preferred = onSlot.filter((e) => ex.consumer.test(e.to));
-    // documented edges first: they are the ones the tool docs themselves vouch for
-    const rank = (e: GEdge) => (e.type === "documented" ? 0 : e.type === "structural" ? 1 : 2);
-    const chosen = [...(preferred.length > 0 ? preferred : onSlot)].sort((a, b) => rank(a) - rank(b)).slice(0, 3);
-    if (chosen.length === 0) {
-      notes.push(`no edge found for "${ex.label}" (slot ${ex.slot})`);
-      continue;
-    }
-    if (preferred.length === 0) notes.push(`"${ex.label}": no ${ex.consumer} consumer, showing other ${ex.slot} edges`);
-    for (const e of chosen) { seeds.add(e.from); seeds.add(e.to); }
+const rank = (e: GEdge) => (e.type === "documented" ? 0 : e.type === "structural" ? 1 : 2);
+const examples = EXAMPLE_RULES.flatMap((rule) => {
+  const hit = graph.edges
+    .filter((e) => e.slot === rule.slot && e.type !== "user_input" && rule.consumer.test(e.to))
+    .sort((a, b) => rank(a) - rank(b) || a.to.length - b.to.length)[0];
+  if (!hit) {
+    console.warn(`example not found in graph: ${rule.slot} into ${rule.consumer}`);
+    return [];
   }
+  return [{ target: hit.to, label: rule.label }];
+});
 
-  // fallback so the default view is never empty: the busiest tool nodes.
-  if (seeds.size === 0) {
-    const degree = new Map<string, number>();
-    for (const e of graph.edges) {
-      if (e.type === "user_input") continue;
-      degree.set(e.from, (degree.get(e.from) ?? 0) + 1);
-      degree.set(e.to, (degree.get(e.to) ?? 0) + 1);
-    }
-    notes.push("neither readme example matched — falling back to highest-degree tools");
-    for (const [id] of [...degree.entries()].sort((a, b) => b[1] - a[1]).slice(0, 6)) seeds.add(id);
-  }
+// compact payload: the full dependency_graph.json is ~3.7MB of repeated keys
+const clip = (s: string | undefined, n: number) => (s && s.length > n ? `${s.slice(0, n - 1)}…` : s ?? "");
+const TYPE_CODE: Record<string, string> = { documented: "d", structural: "s", heuristic: "h", user_input: "u" };
+const data = {
+  meta: { toolCount: graph.meta.toolCount },
+  tools: graph.nodes
+    .filter((n) => n.kind === "tool")
+    .map((n) => ({ id: n.id, name: n.name, tk: n.toolkit === "github" ? "h" : "g", svc: n.service, desc: clip(n.description, 900) })),
+  inputs: graph.nodes.filter((n) => n.kind === "user_input").map((n) => ({ id: n.id, name: n.name, prompt: clip(n.prompt, 400) })),
+  edges: graph.edges.map((e) => [e.from, e.to, e.slot, e.param, TYPE_CODE[e.type], e.required ? 1 : 0]),
+};
 
-  return { seeds: [...seeds], notes };
-}
-
-const { seeds: SHOWCASE_SEEDS, notes } = pickShowcaseSeeds();
-for (const n of notes) console.warn(`showcase: ${n}`);
+const css = await readFile("src/viewer/style.css", "utf-8");
+const app = await readFile("src/viewer/app.js", "utf-8");
+// keep inlined JSON from terminating the script element
+const json = (v: unknown) => JSON.stringify(v).replace(/</g, "\\u003c");
 
 const html = `<!doctype html>
-<html>
+<html lang="en">
 <head>
 <meta charset="utf-8" />
-<title>Composio Tool Dependency Graph</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Tool dependency graph: Google Super and GitHub</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
 <script src="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.9/standalone/umd/vis-network.min.js"></script>
 <style>
-  :root { color-scheme: dark; }
-  body { margin: 0; font-family: system-ui, sans-serif; background: #0f1115; color: #eee; }
-  #toolbar { position: fixed; top: 0; left: 0; right: 0; z-index: 10; padding: 10px 14px; background: #14161c; border-bottom: 1px solid #2a2d36; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
-  #toolbar label { font-size: 13px; display: flex; align-items: center; gap: 4px; }
-  #toolbar input[type=text] { padding: 4px 8px; border-radius: 4px; border: 1px solid #333; background: #1c1e26; color: #eee; }
-  #meta { font-size: 12px; color: #999; margin-left: auto; }
-  #network { position: absolute; top: 46px; left: 0; right: 0; bottom: 0; }
-  button { background: #2a2d36; color: #eee; border: 1px solid #3a3d46; border-radius: 4px; padding: 5px 10px; cursor: pointer; font-size: 13px; }
-  button:hover { background: #363943; }
-  #legend { position: fixed; bottom: 10px; left: 10px; font-size: 12px; background: #14161cdd; padding: 8px 12px; border-radius: 6px; line-height: 1.6; }
-  .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; }
+${css}
 </style>
 </head>
 <body>
-<div id="toolbar">
-  <button id="btnShowcase">Showcase (readme examples)</button>
-  <button id="btnFull">Full graph</button>
-  <label><input type="checkbox" id="chkDocumented" checked /> documented</label>
-  <label><input type="checkbox" id="chkStructural" checked /> structural</label>
-  <label><input type="checkbox" id="chkHeuristic" checked /> heuristic</label>
-  <label><input type="checkbox" id="chkUserInput" checked /> user input</label>
-  <input type="text" id="search" placeholder="search tool slug..." />
-  <div id="meta"></div>
-</div>
-<div id="network"></div>
-<div id="legend">
-  <div><span class="dot" style="background:#4f8fe8"></span>googlesuper tool</div>
-  <div><span class="dot" style="background:#e8944f"></span>github tool</div>
-  <div><span class="dot" style="background:#e8d24f"></span>user input</div>
-  <div><b style="color:#5fd38a">thick green</b> = documented (param docs name the tool) &nbsp; solid = structural (schema slot join)</div>
-  <div>dashed = heuristic (slug noun) &nbsp; dotted = user input &nbsp; hover edges for slot + reason</div>
-</div>
+<header>
+  <h1>Tool dependency graph<small>What to look up, or ask the user, before running a tool</small></h1>
+  <nav role="tablist" aria-label="Views">
+    <button role="tab" data-view="examples" aria-selected="true">Examples</button>
+    <button role="tab" data-view="tool" id="tabTool" hidden>Tool</button>
+    <button role="tab" data-view="services" aria-selected="false">Service map</button>
+  </nav>
+  <div class="search">
+    <input id="search" type="search" list="toolOptions" placeholder="Find a tool, e.g. Send Email or GITHUB_MERGE_A_PULL_REQUEST" aria-label="Find a tool" autocomplete="off" />
+    <datalist id="toolOptions"></datalist>
+  </div>
+</header>
+<main>
+  <section id="stage" aria-label="Graph">
+    <div id="network"></div>
+    <div class="stage-caption" id="caption"></div>
+    <div class="controls">
+      <span class="key"><span class="swatch documented"></span>named in docs</span>
+      <span class="key"><span class="swatch structural"></span>returns it</span>
+      <label><input type="checkbox" id="optHeuristic" checked /><span class="swatch heuristic"></span>likely returns it</label>
+      <label><input type="checkbox" id="optAsk" checked /><span class="swatch ask"></span>ask the user</label>
+    </div>
+  </section>
+  <aside id="panel" aria-live="polite"></aside>
+</main>
 <script>
-const DATA = ${JSON.stringify(graph)};
-const SHOWCASE_SEEDS = ${JSON.stringify(SHOWCASE_SEEDS)};
-// above this many rendered edges, physics stabilization becomes the bottleneck
-// (the real dataset is ~1366 tools), so lay out once without the force sim.
-const PHYSICS_LIMIT = 800;
-
-function colorFor(n) {
-  if (n.kind === "user_input") return "#e8d24f";
-  if (n.toolkit === "github") return "#e8944f";
-  return "#4f8fe8";
-}
-
-function edgeStyle(e) {
-  if (e.type === "documented") return { dashes: false, color: "#5fd38a", width: 2.5 };
-  if (e.type === "structural") return { dashes: false, color: "#7aa8e8" };
-  if (e.type === "heuristic") return { dashes: [4, 3], color: "#e8b04f" };
-  return { dashes: [1, 3], color: "#888" };
-}
-
-function toVisNodes(nodeList) {
-  return nodeList.map((n) => ({
-    id: n.id,
-    label: n.kind === "user_input" ? "ASK: " + n.name : n.name,
-    shape: n.kind === "user_input" ? "box" : "ellipse",
-    color: colorFor(n),
-    title: n.id + (n.description ? " — " + n.description : n.prompt ? " — " + n.prompt : ""),
-  }));
-}
-
-function toVisEdges(edgeList) {
-  return edgeList.map((e) => ({
-    id: e.id,
-    from: e.from,
-    to: e.to,
-    arrows: "to",
-    ...edgeStyle(e),
-    title: (e.slot ? e.slot + " (" + e.param + ")" : e.param) + (e.reason ? " — " + e.reason : ""),
-  }));
-}
-
-const network = new vis.Network(
-  document.getElementById("network"),
-  { nodes: new vis.DataSet([]), edges: new vis.DataSet([]) },
-  { interaction: { hover: true } }
-);
-
-function activeTypes() {
-  const t = [];
-  if (document.getElementById("chkDocumented").checked) t.push("documented");
-  if (document.getElementById("chkStructural").checked) t.push("structural");
-  if (document.getElementById("chkHeuristic").checked) t.push("heuristic");
-  if (document.getElementById("chkUserInput").checked) t.push("user_input");
-  return t;
-}
-
-function render(nodeIds, edgeList) {
-  const types = new Set(activeTypes());
-  const filteredEdges = edgeList.filter((e) => types.has(e.type));
-  const keepIds = new Set(nodeIds);
-  const nodeList = DATA.nodes.filter((n) => keepIds.has(n.id));
-  const heavy = filteredEdges.length > PHYSICS_LIMIT;
-  network.setOptions(
-    heavy
-      ? { physics: { enabled: false }, layout: { improvedLayout: false } }
-      : { physics: { enabled: true, stabilization: true, barnesHut: { gravitationalConstant: -4000, springLength: 140 } }, layout: { improvedLayout: true } }
-  );
-  network.setData({ nodes: new vis.DataSet(toVisNodes(nodeList)), edges: new vis.DataSet(toVisEdges(filteredEdges)) });
-  document.getElementById("meta").textContent =
-    nodeList.length + " nodes, " + filteredEdges.length + " edges (of " + DATA.meta.nodeCount + " / " + DATA.meta.edgeCount + " total)" +
-    (heavy ? " — physics off for speed" : "");
-}
-
-function neighborhood(seedIds) {
-  const seeds = new Set(seedIds.filter((id) => DATA.nodes.some((n) => n.id === id)));
-  const relevantEdges = DATA.edges.filter((e) => seeds.has(e.from) || seeds.has(e.to));
-  const nodeIds = new Set(seeds);
-  for (const e of relevantEdges) { nodeIds.add(e.from); nodeIds.add(e.to); }
-  render([...nodeIds], relevantEdges);
-}
-
-function showcase() { neighborhood(SHOWCASE_SEEDS); }
-function full() { render(DATA.nodes.map((n) => n.id), DATA.edges); }
-
-function searchFocus(q) {
-  if (!q) return;
-  const needle = q.toLowerCase();
-  const matches = DATA.nodes.filter((n) => n.id.toLowerCase().includes(needle)).slice(0, 10);
-  if (matches.length === 0) return;
-  mode = "search";
-  neighborhood(matches.map((n) => n.id));
-}
-
-let mode = "showcase";
-let lastSearch = "";
-function rerender() {
-  if (mode === "full") full();
-  else if (mode === "search") searchFocus(lastSearch);
-  else showcase();
-}
-
-document.getElementById("btnShowcase").onclick = () => { mode = "showcase"; rerender(); };
-document.getElementById("btnFull").onclick = () => { mode = "full"; rerender(); };
-document.getElementById("chkDocumented").onchange = rerender;
-document.getElementById("chkStructural").onchange = rerender;
-document.getElementById("chkHeuristic").onchange = rerender;
-document.getElementById("chkUserInput").onchange = rerender;
-document.getElementById("search").addEventListener("keydown", (ev) => {
-  if (ev.key === "Enter") { lastSearch = ev.target.value; searchFocus(lastSearch); }
-});
-
-rerender();
+const DATA = ${json(data)};
+const EXAMPLES = ${json(examples)};
+</script>
+<script>
+${app}
 </script>
 </body>
 </html>
 `;
 
 await writeFile("graph.html", html, "utf-8");
-console.log(`wrote graph.html (showcase seeds: ${SHOWCASE_SEEDS.join(", ") || "none"})`);
+console.log(`wrote graph.html (${(html.length / 1e6).toFixed(1)}MB; examples: ${examples.map((e) => e.target).join(", ") || "none"})`);
