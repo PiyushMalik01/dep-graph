@@ -5,7 +5,7 @@
 <title>Composio Tool Dependency Graph</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.9/standalone/umd/vis-network.min.js"></script>
 <style>
-  :root { color-scheme: light; }
+  :root { color-scheme: dark; }
   body { margin: 0; font-family: system-ui, sans-serif; background: #0f1115; color: #eee; }
   #toolbar { position: fixed; top: 0; left: 0; right: 0; z-index: 10; padding: 10px 14px; background: #14161c; border-bottom: 1px solid #2a2d36; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
   #toolbar label { font-size: 13px; display: flex; align-items: center; gap: 4px; }
@@ -36,8 +36,11 @@
   <div>solid edge = structural &nbsp; dashed = heuristic &nbsp; dotted = user input</div>
 </div>
 <script>
-const DATA = {"meta":{"generatedAt":"2026-09-16T15:34:57.180Z","toolkits":["googlesuper","github"],"toolCount":6,"nodeCount":12,"edgeCount":12,"method":"slot-ontology-join + fan-in-cap(5) + heuristic-producer-fallback"},"nodes":[{"id":"GOOGLESUPER_GMAIL_LIST_THREADS","kind":"tool","toolkit":"googlesuper","service":"gmail","name":"List Gmail Threads","description":"List email threads in the user's Gmail inbox matching a query"},{"id":"GOOGLESUPER_GMAIL_REPLY_TO_THREAD","kind":"tool","toolkit":"googlesuper","service":"gmail","name":"Reply to Gmail Thread","description":"Send a reply within an existing Gmail thread"},{"id":"GOOGLESUPER_PEOPLE_SEARCH_CONTACTS","kind":"tool","toolkit":"googlesuper","service":"people","name":"Search Contacts","description":"Search the user's Google Contacts by name to find matching people and their email addresses"},{"id":"GOOGLESUPER_GMAIL_SEND_EMAIL","kind":"tool","toolkit":"googlesuper","service":"gmail","name":"Send Email","description":"Send a new email to a recipient's email address"},{"id":"GITHUB_LIST_REPOSITORY_ISSUES","kind":"tool","toolkit":"github","service":"github","name":"List Repository Issues","description":"List issues for a GitHub repository"},{"id":"GITHUB_CREATE_AN_ISSUE_COMMENT","kind":"tool","toolkit":"github","service":"github","name":"Create Issue Comment","description":"Create a comment on a GitHub issue"},{"id":"INPUT:gmail.body","kind":"user_input","name":"body","prompt":"Reply body text"},{"id":"INPUT:people.name","kind":"user_input","name":"name","prompt":"Name to search for"},{"id":"INPUT:gmail.subject","kind":"user_input","name":"subject","prompt":"Provide subject"},{"id":"INPUT:github.owner","kind":"user_input","name":"owner","prompt":"Provide owner"},{"id":"INPUT:github.repo","kind":"user_input","name":"repo","prompt":"Provide repo"},{"id":"INPUT:github.comment_body","kind":"user_input","name":"comment_body","prompt":"Text of the comment"}],"edges":[{"id":"e0","from":"GOOGLESUPER_GMAIL_LIST_THREADS","to":"GOOGLESUPER_GMAIL_REPLY_TO_THREAD","slot":"gmail.thread_id","param":"thread_id","paramPath":"thread_id","required":true,"type":"structural","source":"schema","confidence":0.8},{"id":"e1","from":"INPUT:gmail.body","to":"GOOGLESUPER_GMAIL_REPLY_TO_THREAD","slot":"","param":"body","paramPath":"body","required":true,"type":"user_input","source":"none","confidence":1},{"id":"e2","from":"INPUT:people.name","to":"GOOGLESUPER_PEOPLE_SEARCH_CONTACTS","slot":"","param":"name","paramPath":"name","required":true,"type":"user_input","source":"none","confidence":1},{"id":"e3","from":"GOOGLESUPER_PEOPLE_SEARCH_CONTACTS","to":"GOOGLESUPER_GMAIL_SEND_EMAIL","slot":"people.email_address","param":"email","paramPath":"email","required":true,"type":"structural","source":"schema","confidence":0.8},{"id":"e4","from":"INPUT:gmail.subject","to":"GOOGLESUPER_GMAIL_SEND_EMAIL","slot":"","param":"subject","paramPath":"subject","required":true,"type":"user_input","source":"none","confidence":1},{"id":"e5","from":"INPUT:gmail.body","to":"GOOGLESUPER_GMAIL_SEND_EMAIL","slot":"","param":"body","paramPath":"body","required":true,"type":"user_input","source":"none","confidence":1},{"id":"e6","from":"INPUT:github.owner","to":"GITHUB_LIST_REPOSITORY_ISSUES","slot":"github.owner","param":"owner","paramPath":"owner","required":true,"type":"user_input","source":"none","confidence":1},{"id":"e7","from":"INPUT:github.repo","to":"GITHUB_LIST_REPOSITORY_ISSUES","slot":"github.repo","param":"repo","paramPath":"repo","required":true,"type":"user_input","source":"none","confidence":1},{"id":"e8","from":"INPUT:github.owner","to":"GITHUB_CREATE_AN_ISSUE_COMMENT","slot":"github.owner","param":"owner","paramPath":"owner","required":true,"type":"user_input","source":"none","confidence":1},{"id":"e9","from":"INPUT:github.repo","to":"GITHUB_CREATE_AN_ISSUE_COMMENT","slot":"github.repo","param":"repo","paramPath":"repo","required":true,"type":"user_input","source":"none","confidence":1},{"id":"e10","from":"GITHUB_LIST_REPOSITORY_ISSUES","to":"GITHUB_CREATE_AN_ISSUE_COMMENT","slot":"github.issue_number","param":"issue_number","paramPath":"issue_number","required":true,"type":"structural","source":"schema","confidence":0.8},{"id":"e11","from":"INPUT:github.comment_body","to":"GITHUB_CREATE_AN_ISSUE_COMMENT","slot":"","param":"comment_body","paramPath":"comment_body","required":true,"type":"user_input","source":"none","confidence":1}]};
+const DATA = {"meta":{"generatedAt":"2026-09-16T16:00:30.852Z","toolkits":["googlesuper","github"],"toolCount":6,"nodeCount":12,"edgeCount":12,"method":"slot-ontology-join + fan-in-cap(5) + heuristic-producer-fallback"},"nodes":[{"id":"GOOGLESUPER_GMAIL_LIST_THREADS","kind":"tool","toolkit":"googlesuper","service":"gmail","name":"List Gmail Threads","description":"List email threads in the user's Gmail inbox matching a query"},{"id":"GOOGLESUPER_GMAIL_REPLY_TO_THREAD","kind":"tool","toolkit":"googlesuper","service":"gmail","name":"Reply to Gmail Thread","description":"Send a reply within an existing Gmail thread"},{"id":"GOOGLESUPER_PEOPLE_SEARCH_CONTACTS","kind":"tool","toolkit":"googlesuper","service":"people","name":"Search Contacts","description":"Search the user's Google Contacts by name to find matching people and their email addresses"},{"id":"GOOGLESUPER_GMAIL_SEND_EMAIL","kind":"tool","toolkit":"googlesuper","service":"gmail","name":"Send Email","description":"Send a new email to a recipient's email address"},{"id":"GITHUB_LIST_REPOSITORY_ISSUES","kind":"tool","toolkit":"github","service":"github","name":"List Repository Issues","description":"List issues for a GitHub repository"},{"id":"GITHUB_CREATE_AN_ISSUE_COMMENT","kind":"tool","toolkit":"github","service":"github","name":"Create Issue Comment","description":"Create a comment on a GitHub issue"},{"id":"INPUT:gmail.body","kind":"user_input","name":"body","prompt":"Reply body text"},{"id":"INPUT:people.name","kind":"user_input","name":"name","prompt":"Name to search for"},{"id":"INPUT:gmail.subject","kind":"user_input","name":"subject","prompt":"Provide subject"},{"id":"INPUT:github.owner","kind":"user_input","name":"owner","prompt":"Provide owner"},{"id":"INPUT:github.repo","kind":"user_input","name":"repo","prompt":"Provide repo"},{"id":"INPUT:github.comment_body","kind":"user_input","name":"comment_body","prompt":"Text of the comment"}],"edges":[{"id":"e0","from":"GOOGLESUPER_GMAIL_LIST_THREADS","to":"GOOGLESUPER_GMAIL_REPLY_TO_THREAD","slot":"gmail.thread_id","param":"thread_id","paramPath":"thread_id","required":true,"type":"structural","source":"schema","confidence":0.8},{"id":"e1","from":"INPUT:gmail.body","to":"GOOGLESUPER_GMAIL_REPLY_TO_THREAD","slot":"","param":"body","paramPath":"body","required":true,"type":"user_input","source":"none","confidence":1},{"id":"e2","from":"INPUT:people.name","to":"GOOGLESUPER_PEOPLE_SEARCH_CONTACTS","slot":"","param":"name","paramPath":"name","required":true,"type":"user_input","source":"none","confidence":1},{"id":"e3","from":"GOOGLESUPER_PEOPLE_SEARCH_CONTACTS","to":"GOOGLESUPER_GMAIL_SEND_EMAIL","slot":"people.email_address","param":"email","paramPath":"email","required":true,"type":"structural","source":"schema","confidence":0.8},{"id":"e4","from":"INPUT:gmail.subject","to":"GOOGLESUPER_GMAIL_SEND_EMAIL","slot":"","param":"subject","paramPath":"subject","required":true,"type":"user_input","source":"none","confidence":1},{"id":"e5","from":"INPUT:gmail.body","to":"GOOGLESUPER_GMAIL_SEND_EMAIL","slot":"","param":"body","paramPath":"body","required":true,"type":"user_input","source":"none","confidence":1},{"id":"e6","from":"INPUT:github.owner","to":"GITHUB_LIST_REPOSITORY_ISSUES","slot":"github.owner","param":"owner","paramPath":"owner","required":true,"type":"user_input","source":"none","confidence":1},{"id":"e7","from":"INPUT:github.repo","to":"GITHUB_LIST_REPOSITORY_ISSUES","slot":"github.repo","param":"repo","paramPath":"repo","required":true,"type":"user_input","source":"none","confidence":1},{"id":"e8","from":"INPUT:github.owner","to":"GITHUB_CREATE_AN_ISSUE_COMMENT","slot":"github.owner","param":"owner","paramPath":"owner","required":true,"type":"user_input","source":"none","confidence":1},{"id":"e9","from":"INPUT:github.repo","to":"GITHUB_CREATE_AN_ISSUE_COMMENT","slot":"github.repo","param":"repo","paramPath":"repo","required":true,"type":"user_input","source":"none","confidence":1},{"id":"e10","from":"GITHUB_LIST_REPOSITORY_ISSUES","to":"GITHUB_CREATE_AN_ISSUE_COMMENT","slot":"github.issue_number","param":"issue_number","paramPath":"issue_number","required":true,"type":"structural","source":"schema","confidence":0.8},{"id":"e11","from":"INPUT:github.comment_body","to":"GITHUB_CREATE_AN_ISSUE_COMMENT","slot":"","param":"comment_body","paramPath":"comment_body","required":true,"type":"user_input","source":"none","confidence":1}]};
 const SHOWCASE_SEEDS = ["GOOGLESUPER_GMAIL_LIST_THREADS","GOOGLESUPER_GMAIL_REPLY_TO_THREAD","GOOGLESUPER_PEOPLE_SEARCH_CONTACTS","GOOGLESUPER_GMAIL_SEND_EMAIL"];
+// above this many rendered edges, physics stabilization becomes the bottleneck
+// (the real dataset is ~1366 tools), so lay out once without the force sim.
+const PHYSICS_LIMIT = 800;
 
 function colorFor(n) {
   if (n.kind === "user_input") return "#e8d24f";
@@ -57,7 +60,7 @@ function toVisNodes(nodeList) {
     label: n.kind === "user_input" ? "ASK: " + n.name : n.name,
     shape: n.kind === "user_input" ? "box" : "ellipse",
     color: colorFor(n),
-    title: n.description || n.prompt || n.id,
+    title: n.id + (n.description ? " — " + n.description : n.prompt ? " — " + n.prompt : ""),
   }));
 }
 
@@ -68,14 +71,14 @@ function toVisEdges(edgeList) {
     to: e.to,
     arrows: "to",
     ...edgeStyle(e),
-    title: e.slot ? (e.slot + " (" + e.param + ")" + (e.reason ? " — " + e.reason : "")) : e.param,
+    title: e.slot ? e.slot + " (" + e.param + ")" : e.param,
   }));
 }
 
 const network = new vis.Network(
   document.getElementById("network"),
   { nodes: new vis.DataSet([]), edges: new vis.DataSet([]) },
-  { physics: { stabilization: true, barnesHut: { gravitationalConstant: -4000, springLength: 140 } }, interaction: { hover: true } }
+  { interaction: { hover: true } }
 );
 
 function activeTypes() {
@@ -91,35 +94,43 @@ function render(nodeIds, edgeList) {
   const filteredEdges = edgeList.filter((e) => types.has(e.type));
   const keepIds = new Set(nodeIds);
   const nodeList = DATA.nodes.filter((n) => keepIds.has(n.id));
+  const heavy = filteredEdges.length > PHYSICS_LIMIT;
+  network.setOptions(
+    heavy
+      ? { physics: { enabled: false }, layout: { improvedLayout: false } }
+      : { physics: { enabled: true, stabilization: true, barnesHut: { gravitationalConstant: -4000, springLength: 140 } }, layout: { improvedLayout: true } }
+  );
   network.setData({ nodes: new vis.DataSet(toVisNodes(nodeList)), edges: new vis.DataSet(toVisEdges(filteredEdges)) });
-  document.getElementById("meta").textContent = nodeList.length + " nodes, " + filteredEdges.length + " edges (of " + DATA.meta.nodeCount + " / " + DATA.meta.edgeCount + " total)";
+  document.getElementById("meta").textContent =
+    nodeList.length + " nodes, " + filteredEdges.length + " edges (of " + DATA.meta.nodeCount + " / " + DATA.meta.edgeCount + " total)" +
+    (heavy ? " — physics off for speed" : "");
 }
 
-function showcase() {
-  const seeds = new Set(SHOWCASE_SEEDS.filter((id) => DATA.nodes.some((n) => n.id === id)));
+function neighborhood(seedIds) {
+  const seeds = new Set(seedIds.filter((id) => DATA.nodes.some((n) => n.id === id)));
   const relevantEdges = DATA.edges.filter((e) => seeds.has(e.from) || seeds.has(e.to));
   const nodeIds = new Set(seeds);
   for (const e of relevantEdges) { nodeIds.add(e.from); nodeIds.add(e.to); }
-  render(Array.from(nodeIds), relevantEdges);
+  render([...nodeIds], relevantEdges);
 }
 
-function full() {
-  render(DATA.nodes.map((n) => n.id), DATA.edges);
-}
+function showcase() { neighborhood(SHOWCASE_SEEDS); }
+function full() { render(DATA.nodes.map((n) => n.id), DATA.edges); }
 
 function searchFocus(q) {
   if (!q) return;
-  const match = DATA.nodes.find((n) => n.id.toLowerCase().includes(q.toLowerCase()));
-  if (!match) return;
-  const relevantEdges = DATA.edges.filter((e) => e.from === match.id || e.to === match.id);
-  const nodeIds = new Set([match.id]);
-  for (const e of relevantEdges) { nodeIds.add(e.from); nodeIds.add(e.to); }
-  render(Array.from(nodeIds), relevantEdges);
+  const needle = q.toLowerCase();
+  const matches = DATA.nodes.filter((n) => n.id.toLowerCase().includes(needle)).slice(0, 10);
+  if (matches.length === 0) return;
+  mode = "search";
+  neighborhood(matches.map((n) => n.id));
 }
 
 let mode = "showcase";
+let lastSearch = "";
 function rerender() {
   if (mode === "full") full();
+  else if (mode === "search") searchFocus(lastSearch);
   else showcase();
 }
 
@@ -129,7 +140,7 @@ document.getElementById("chkStructural").onchange = rerender;
 document.getElementById("chkHeuristic").onchange = rerender;
 document.getElementById("chkUserInput").onchange = rerender;
 document.getElementById("search").addEventListener("keydown", (ev) => {
-  if (ev.key === "Enter") searchFocus(ev.target.value);
+  if (ev.key === "Enter") { lastSearch = ev.target.value; searchFocus(lastSearch); }
 });
 
 rerender();

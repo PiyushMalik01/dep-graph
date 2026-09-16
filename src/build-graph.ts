@@ -1,8 +1,14 @@
 import { readFile, writeFile } from "fs/promises";
 import { flattenSchema, type Leaf } from "./extract.ts";
-import { ALL_SLOTS, inferService, isHumanParam, resolveSlot, slotNoun, type Service } from "./ontology.ts";
-
-const SLOT_CACHE = new Set(ALL_SLOTS);
+import {
+  inferService,
+  isHumanParam,
+  resolveSlot,
+  slotNouns,
+  slotsForService,
+  tokenNamesNoun,
+  type Service,
+} from "./ontology.ts";
 
 interface RawTool {
   slug: string;
@@ -19,6 +25,7 @@ interface ToolInfo {
   description: string;
   toolkit: string;
   service: Service;
+  slugTokens: string[];
   requires: (Leaf & { slot: string | null; human: boolean })[];
   produces: (Leaf & { slot: string | null })[];
 }
@@ -27,11 +34,23 @@ const DISCOVERY_VERBS = /^(LIST|SEARCH|FIND|QUERY|GET_ALL)/;
 const GET_VERB = /^GET(?!_ALL)/;
 const CREATE_VERB = /^(CREATE|ADD|INSERT)/;
 
+// verb of the tool, ignoring the toolkit prefix (real slugs look like
+// GOOGLESUPER_LIST_THREADS / GITHUB_LIST_REPOSITORY_ISSUES, so the leading
+// toolkit token has to come off before the verb is visible).
+function verbOf(slug: string): string {
+  return slug.replace(/^(GOOGLESUPER|GITHUB)_/, "");
+}
+
 function verbWeight(slug: string): number {
-  if (DISCOVERY_VERBS.test(slug)) return 3;
-  if (GET_VERB.test(slug)) return 2;
-  if (CREATE_VERB.test(slug)) return 1;
+  const v = verbOf(slug);
+  if (DISCOVERY_VERBS.test(v)) return 3;
+  if (GET_VERB.test(v)) return 2;
+  if (CREATE_VERB.test(v)) return 1;
   return 0;
+}
+
+function tokenize(s: string): string[] {
+  return s.toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
 }
 
 async function loadTools(path: string): Promise<RawTool[]> {
@@ -52,19 +71,36 @@ function buildToolInfo(t: RawTool): ToolInfo {
     slot: resolveSlot(service, l.name),
   }));
 
-  return { slug: t.slug, name: t.name, description, toolkit, service, requires, produces };
+  return {
+    slug: t.slug,
+    name: t.name,
+    description,
+    toolkit,
+    service,
+    slugTokens: tokenize(verbOf(t.slug)),
+    requires,
+    produces,
+  };
 }
 
-// when a tool has no declared outputParameters (common), infer it still
-// "produces" a slot if its slug is a discovery/create verb and its
-// description/slug mentions the slot's entity noun.
+/**
+ * When a tool declares no output schema (common in the raw Composio dump), infer
+ * that it still produces a slot from its slug: a discovery/get/create verb plus
+ * the slot's entity noun appearing as a *slug token*.
+ *
+ * Matching is deliberately restricted to slug tokens, not the description. An
+ * earlier version substring-matched slug+description, which at real scale makes
+ * essentially every GitHub tool a producer of `github.owner` and `github.repo`
+ * (both nouns appear in almost every GitHub description) — thousands of junk
+ * edges. Slug tokens are a much higher-precision signal for what a tool returns.
+ */
 function heuristicProduces(tool: ToolInfo, slot: string): boolean {
-  if (tool.produces.length > 0) return false; // schema-derived already covers it
-  const noun = slotNoun(slot);
-  if (!noun) return false;
-  const hay = `${tool.slug} ${tool.description}`.toLowerCase();
-  const verbOk = DISCOVERY_VERBS.test(tool.slug) || CREATE_VERB.test(tool.slug) || GET_VERB.test(tool.slug);
-  return verbOk && hay.includes(noun.split(" ")[0]!);
+  if (tool.produces.some((p) => p.slot)) return false; // schema already covers it
+  const nouns = slotNouns(slot).filter((n) => n.length >= 3);
+  if (nouns.length === 0) return false;
+  const v = verbOf(tool.slug);
+  if (!DISCOVERY_VERBS.test(v) && !CREATE_VERB.test(v) && !GET_VERB.test(v)) return false;
+  return tool.slugTokens.some((tok) => nouns.some((n) => tokenNamesNoun(tok, n)));
 }
 
 interface Node {
@@ -90,42 +126,34 @@ interface Edge {
   confidence: number;
 }
 
+const FAN_IN_CAP = 5;
+
 async function main() {
   const googlesuper = await loadTools("data/googlesuper_tools.json");
   const github = await loadTools("data/github_tools.json");
-  const rawTools = [...googlesuper, ...github];
 
-  const tools = rawTools.map(buildToolInfo);
+  const tools = [...googlesuper, ...github].map(buildToolInfo);
   const bySlug = new Map(tools.map((t) => [t.slug, t]));
 
-  // producers index: slot -> [{tool, source}]
+  // inverted index: slot -> producing tools
   const producers = new Map<string, { tool: string; source: "schema" | "heuristic" }[]>();
-  for (const t of tools) {
-    const producedSlots = new Set(t.produces.map((p) => p.slot).filter(Boolean) as string[]);
-    for (const slot of producedSlots) {
-      if (!producers.has(slot)) producers.set(slot, []);
-      producers.get(slot)!.push({ tool: t.slug, source: "schema" });
-    }
-    // heuristic fallback only for ALL slots relevant to this tool's service
-    if (producedSlots.size === 0) {
-      for (const slot of ALL_SLOTS_FOR(t.service)) {
-        if (heuristicProduces(t, slot)) {
-          if (!producers.has(slot)) producers.set(slot, []);
-          producers.get(slot)!.push({ tool: t.slug, source: "heuristic" });
-        }
-      }
-    }
-  }
+  const addProducer = (slot: string, tool: string, source: "schema" | "heuristic") => {
+    const list = producers.get(slot) ?? [];
+    if (!list.some((p) => p.tool === tool)) list.push({ tool, source });
+    producers.set(slot, list);
+  };
 
-  function ALL_SLOTS_FOR(service: Service): string[] {
-    // avoid importing ALL_SLOTS filtered externally each call; cheap enough here
-    return Array.from(SLOT_CACHE);
+  for (const t of tools) {
+    const declared = new Set(t.produces.map((p) => p.slot).filter(Boolean) as string[]);
+    for (const slot of declared) addProducer(slot, t.slug, "schema");
+    if (declared.size > 0) continue;
+    // fallback, scoped to slots this tool's service could plausibly produce
+    for (const slot of slotsForService(t.service)) {
+      if (heuristicProduces(t, slot)) addProducer(slot, t.slug, "heuristic");
+    }
   }
 
   const nodes = new Map<string, Node>();
-  const edges: Edge[] = [];
-  let edgeCounter = 0;
-
   for (const t of tools) {
     nodes.set(t.slug, {
       id: t.slug,
@@ -137,29 +165,34 @@ async function main() {
     });
   }
 
-  const FAN_IN_CAP = 5;
+  const edges: Edge[] = [];
+  const seenEdges = new Set<string>();
+  let edgeCounter = 0;
+  const pushEdge = (e: Omit<Edge, "id">) => {
+    const key = `${e.from}->${e.to}|${e.slot}|${e.paramPath}`;
+    if (seenEdges.has(key)) return;
+    seenEdges.add(key);
+    edges.push({ id: `e${edgeCounter++}`, ...e });
+  };
 
   for (const consumer of tools) {
     for (const req of consumer.requires) {
       const slot = req.slot;
-      const candidates = slot ? producers.get(slot) ?? [] : [];
-      const validProducers = candidates.filter((p) => p.tool !== consumer.slug);
+      const validProducers = (slot ? producers.get(slot) ?? [] : []).filter((p) => p.tool !== consumer.slug);
 
       if (slot && validProducers.length > 0) {
         const ranked = validProducers
           .map((p) => {
             const pt = bySlug.get(p.tool)!;
             const sameService = pt.service === consumer.service ? 1 : 0;
-            const score =
-              (p.source === "schema" ? 100 : 0) + verbWeight(pt.slug) * 10 + sameService * 5;
+            const score = (p.source === "schema" ? 100 : 0) + verbWeight(pt.slug) * 10 + sameService * 5;
             return { ...p, score };
           })
-          .sort((a, b) => b.score - a.score)
+          .sort((a, b) => b.score - a.score || a.tool.localeCompare(b.tool))
           .slice(0, FAN_IN_CAP);
 
         for (const p of ranked) {
-          edges.push({
-            id: `e${edgeCounter++}`,
+          pushEdge({
             from: p.tool,
             to: consumer.slug,
             slot,
@@ -174,7 +207,7 @@ async function main() {
       }
 
       // "ask the user" side of the spec: no producer found, or the value is
-      // inherently human-authored/free text.
+      // inherently human-authored free text.
       if (!slot || validProducers.length === 0 || req.human) {
         const inputId = `INPUT:${slot ?? `${consumer.service}.${req.name}`}`;
         if (!nodes.has(inputId)) {
@@ -185,8 +218,7 @@ async function main() {
             prompt: req.description || `Provide ${req.name}`,
           });
         }
-        edges.push({
-          id: `e${edgeCounter++}`,
+        pushEdge({
           from: inputId,
           to: consumer.slug,
           slot: slot ?? "",
@@ -208,7 +240,7 @@ async function main() {
       toolCount: tools.length,
       nodeCount: nodes.size,
       edgeCount: edges.length,
-      method: "slot-ontology-join + fan-in-cap(5) + heuristic-producer-fallback",
+      method: `slot-ontology-join + fan-in-cap(${FAN_IN_CAP}) + heuristic-producer-fallback`,
     },
     nodes: Array.from(nodes.values()),
     edges,
@@ -218,7 +250,7 @@ async function main() {
 
   const slotsOut: Record<string, { producers: string[]; consumers: string[] }> = {};
   for (const [slot, prods] of producers.entries()) {
-    slotsOut[slot] = { producers: prods.map((p) => p.tool), consumers: [] };
+    slotsOut[slot] = { producers: prods.map((p) => `${p.tool}${p.source === "heuristic" ? " (heuristic)" : ""}`), consumers: [] };
   }
   for (const t of tools) {
     for (const req of t.requires) {
@@ -228,8 +260,10 @@ async function main() {
   }
   await writeFile("slots.json", JSON.stringify(slotsOut, null, 2), "utf-8");
 
-  console.log(`tools: ${tools.length}, nodes: ${nodes.size}, edges: ${edges.length}`);
-  console.log(`wrote dependency_graph.json, slots.json`);
+  const unresolved = tools.filter((t) => t.service === "unknown").length;
+  const byType = edges.reduce<Record<string, number>>((a, e) => ((a[e.type] = (a[e.type] ?? 0) + 1), a), {});
+  console.log(`tools: ${tools.length} (service=unknown: ${unresolved}), nodes: ${nodes.size}, edges: ${edges.length}`, byType);
+  console.log("wrote dependency_graph.json, slots.json");
 }
 
 await main();
