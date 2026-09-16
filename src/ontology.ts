@@ -382,10 +382,14 @@ export function resolveOutputSlot(
 
   if (parent) {
     const slot = compose(parent);
-    // primary only when the parent *is* the slot's entity or the tool lives in the
-    // slot's service: GET_CONTACTS' emailAddresses[].value is a contact email,
-    // FIND_EVENT's attendees[].email is an incidental one.
-    return slot ? { slot, primary: slot.startsWith(`${service}.`) || slotNouns(slot).includes(parent) } : null;
+    if (!slot) return null;
+    // primary when the value belongs to the entity the tool is about: a top-level
+    // list (threads[].id), a parent that *is* the entity (owner.login), or a tool
+    // whose slug names it (GET_CONTACTS' connections[].emailAddresses[].value).
+    // check_runs[].pull_requests[].number or FIND_EVENT's attendees[].email are incidental.
+    const nouns = slotNouns(slot);
+    const names = (w: string | null) => w !== null && nouns.some((n) => w === n || singularize(w) === n);
+    return { slot, primary: parents.length <= 1 || names(parent) || names(slugNoun) };
   }
   if (slugNoun) {
     const slot = compose(slugNoun);

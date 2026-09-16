@@ -41,7 +41,7 @@ Readme examples, as they appear in the graph:
 4. **Join + rank** (`build-graph.ts`): every input that resolves to a slot is a dependency, optional ones included, since `SEND_EMAIL.recipient_email` is optional only because of a "one of to/cc/bcc" rule. Producers are picked in tiers:
    - First tier: primary, non-mutating producers in the slot's home service whose slug names the entity (`LIST_PULL_REQUESTS` for `pull_number`).
    - Fallback: broader producers, used only when that tier is empty.
-   - The top 5 are kept, or 2 for `github.owner`/`github.repo`, which ~600 tools consume.
+   - The top 5 are kept, or 2 for any slot with more than 100 consumers (in practice `github.owner`/`github.repo`).
    - Documented references are added first and take precedence over the slot join.
 5. **Visualize** (`visualize.ts`): vis-network. The showcase seeds are chosen by slot and verb, not hardcoded slugs.
 
@@ -50,7 +50,7 @@ No LLM is used. The pipeline is deterministic and re-runs in seconds.
 ## Known limitations / false positives
 
 - Resolution is by name, so any leaf that normalizes to a slot name counts. For example, some Drive tools' `labels[].id` are Drive labels but can resolve to `gmail.label_id` through the shared Google tier. Home-service preference keeps these out of the top ranks in most cases, but not all.
-- GitHub's `github.owner` and `github.repo` are ubiquitous. They are capped at 2 producers per consumer and still make up about 25% of edges.
+- GitHub's `github.owner` and `github.repo` are ubiquitous. They are capped at 2 producers per consumer and still make up about 27% of edges.
 - `CREATE_*` tools count as producers (create issue -> comment on it), which is correct for workflows but noisy when you only want lookups.
 - Documented references are regex-extracted, and only a small negation guard ("not", "instead of") filters out references that name the wrong tool.
 - Composite values (Analytics `parent = "properties/123"`, Sheets A1 ranges) are treated as opaque slots.
