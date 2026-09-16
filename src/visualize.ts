@@ -20,7 +20,8 @@ const graph: { meta: { toolCount: number; nodeCount: number; edgeCount: number }
  */
 const EXAMPLE_RULES = [
   { label: "needs a thread_id, which listing threads provides", slot: "gmail.thread_id", consumer: /REPLY/i },
-  { label: "needs an email address, which a contacts lookup by name provides", slot: "people.email_address", consumer: /SEND_EMAIL$/i },
+  // prefer: the precursor the brief describes, so the example's plan leads with it
+  { label: "needs an email address, which a contacts lookup by name provides", slot: "people.email_address", consumer: /SEND_EMAIL$/i, prefer: "SEARCH_PEOPLE$" },
 ];
 
 const rank = (e: GEdge) => (e.type === "documented" ? 0 : e.type === "structural" ? 1 : 2);
@@ -32,7 +33,7 @@ const examples = EXAMPLE_RULES.flatMap((rule) => {
     console.warn(`example not found in graph: ${rule.slot} into ${rule.consumer}`);
     return [];
   }
-  return [{ target: hit.to, label: rule.label, slot: rule.slot }];
+  return [{ target: hit.to, label: rule.label, slot: rule.slot, prefer: rule.prefer }];
 });
 
 // eval/results.json is written by `bun run eval`; the viewer shows it when present

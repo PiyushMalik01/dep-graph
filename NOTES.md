@@ -29,7 +29,7 @@ No LLM calls are made. The whole pipeline is deterministic and runs in seconds.
 
 ## Accuracy
 
-The graph was measured, not just built. Edges were checked by hand: "is calling this tool a realistic way for an agent to get a valid value for that parameter?"
+The graph was measured, not just built. Edges were checked by hand: "is calling this tool a realistic way for an agent to get a valid value for that parameter?" All labels come from a single annotator (the author of the pipeline) using that criterion, so treat the numbers as a careful estimate, not an independent audit.
 
 **Held-out sample** (`eval/holdout_labels.json`): 110 edges drawn at random, stratified by type, *after* all tuning. Labelled once, with no changes to the code afterwards.
 
@@ -97,6 +97,7 @@ Remaining error classes seen in the held-out set: team slugs taken from branch-p
 
 - About 20% of structural links are still wrong. They are mostly entities that share a name across GitHub sub-APIs in ways the scope check doesn't catch.
 - GitHub `owner`/`repo` edges are correct but ubiquitous: about a third of all edges, even capped at 2 sources each.
+- `GITHUB_LIST_USERS` lists every GitHub account and still ranks as a source of `username` for about 90 tools. It is the same problem as `LIST_PUBLIC_REPOSITORIES`, but it was left unfixed so the held-out labels stay valid for the code as measured.
 - `CREATE_*` tools count as sources (create an issue, then comment on it). That's right for workflows, but noisy when only lookups are wanted.
 - Composite values (`properties/123`, A1 ranges) are treated as opaque slots.
 - Precision is measured on 235 hand labels in total. The held-out structural estimate (60 labels) has a 95% interval of roughly ±10 points.

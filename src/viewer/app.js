@@ -240,6 +240,11 @@ const stepKey = (st) => (st.kind === "call" ? "call:" + st.tool : "ask:" + st.pa
 // `have` holds steps already in the plan: a route that reuses them is cheaper,
 // so once List repositories is planned for `repo`, List repository issues beats
 // an unrelated issue listing for `issue_number`.
+// Set only while rendering a readme example: the route the brief describes
+// (name -> Search People -> Send Email) leads, even though a schema-backed
+// list-all-contacts route is cheaper by link type.
+let preferredSource = null;
+
 function fillOptions(g, depth, visiting, have = new Set()) {
   const ask = g.edges.find((e) => e.type === "user_input");
   // a required value with both an ask node and tool sources is human-authored
@@ -253,7 +258,7 @@ function fillOptions(g, depth, visiting, have = new Set()) {
       options.push({
         from: e.from,
         steps: sub.map((st, i) => (i === sub.length - 1 ? { ...st, gives: [g.names[0]], how: e.type } : st)),
-        cost: RANK[e.type] * 2 + sub.filter((st) => !have.has(stepKey(st))).length,
+        cost: RANK[e.type] * 2 + sub.filter((st) => !have.has(stepKey(st))).length - (preferredSource?.test(e.from) ? 5 : 0),
       });
     }
   }
@@ -323,6 +328,15 @@ function routesFor(toolId, slot) {
     <ul class="sources">${routes.map((o) => `<li class="chain"><span class="step-note">${esc(o.steps.map((st) => (st.kind === "ask" ? `ask the user for ${st.param}` : nodes.get(st.tool).name)).join(" → ").replace(/^./, (c) => c.toUpperCase()))}</span></li>`).join("")}</ul>`;
 }
 
+function examplePlan(ex) {
+  preferredSource = ex.prefer ? new RegExp(ex.prefer) : null;
+  try {
+    return planBlock(ex.target, new Set([ex.slot])) + (ex.slot ? routesFor(ex.target, ex.slot) : "");
+  } finally {
+    preferredSource = null;
+  }
+}
+
 function planBlock(toolId, alsoFill = new Set()) {
   const steps = planSteps(toolId, 0, new Set([toolId]), alsoFill);
   const optional = optionalChains(toolId, alsoFill);
@@ -350,7 +364,7 @@ function showExamples() {
       <p>${DATA.meta.toolCount.toLocaleString()} Google Super and GitHub tools. An arrow means a tool's output, or the user's answer, fills a parameter the next tool needs.</p>
       ${EXAMPLES.map((ex) => `
         <h3><button class="link" data-tool="${esc(ex.target)}">${esc(nodes.get(ex.target).name)}</button> <span>${esc(ex.label)}</span></h3>
-        ${planBlock(ex.target, new Set([ex.slot]))}${ex.slot ? routesFor(ex.target, ex.slot) : ""}`).join("")}
+        ${examplePlan(ex)}`).join("")}
       ${evalBlock()}
       <h3>How links were found</h3>
       <ul class="sources">
