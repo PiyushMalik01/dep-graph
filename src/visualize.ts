@@ -8,7 +8,7 @@ interface GNode {
   description?: string;
   prompt?: string;
 }
-interface GEdge { id: string; from: string; to: string; slot: string; param: string; type: string }
+interface GEdge { id: string; from: string; to: string; slot: string; param: string; type: string; reason?: string; confidence?: number }
 
 const graph: { meta: Record<string, unknown>; nodes: GNode[]; edges: GEdge[] } = JSON.parse(
   await readFile("dependency_graph.json", "utf-8")
@@ -36,7 +36,9 @@ function pickShowcaseSeeds(): { seeds: string[]; notes: string[] } {
   for (const ex of EXAMPLES) {
     const onSlot = graph.edges.filter((e) => e.slot === ex.slot && e.type !== "user_input");
     const preferred = onSlot.filter((e) => ex.consumer.test(e.to));
-    const chosen = (preferred.length > 0 ? preferred : onSlot).slice(0, 3);
+    // documented edges first: they are the ones the tool docs themselves vouch for
+    const rank = (e: GEdge) => (e.type === "documented" ? 0 : e.type === "structural" ? 1 : 2);
+    const chosen = [...(preferred.length > 0 ? preferred : onSlot)].sort((a, b) => rank(a) - rank(b)).slice(0, 3);
     if (chosen.length === 0) {
       notes.push(`no edge found for "${ex.label}" (slot ${ex.slot})`);
       continue;
@@ -87,6 +89,7 @@ const html = `<!doctype html>
 <div id="toolbar">
   <button id="btnShowcase">Showcase (readme examples)</button>
   <button id="btnFull">Full graph</button>
+  <label><input type="checkbox" id="chkDocumented" checked /> documented</label>
   <label><input type="checkbox" id="chkStructural" checked /> structural</label>
   <label><input type="checkbox" id="chkHeuristic" checked /> heuristic</label>
   <label><input type="checkbox" id="chkUserInput" checked /> user input</label>
@@ -98,7 +101,8 @@ const html = `<!doctype html>
   <div><span class="dot" style="background:#4f8fe8"></span>googlesuper tool</div>
   <div><span class="dot" style="background:#e8944f"></span>github tool</div>
   <div><span class="dot" style="background:#e8d24f"></span>user input</div>
-  <div>solid edge = structural &nbsp; dashed = heuristic &nbsp; dotted = user input</div>
+  <div><b style="color:#5fd38a">thick green</b> = documented (param docs name the tool) &nbsp; solid = structural (schema slot join)</div>
+  <div>dashed = heuristic (slug noun) &nbsp; dotted = user input &nbsp; hover edges for slot + reason</div>
 </div>
 <script>
 const DATA = ${JSON.stringify(graph)};
@@ -114,6 +118,7 @@ function colorFor(n) {
 }
 
 function edgeStyle(e) {
+  if (e.type === "documented") return { dashes: false, color: "#5fd38a", width: 2.5 };
   if (e.type === "structural") return { dashes: false, color: "#7aa8e8" };
   if (e.type === "heuristic") return { dashes: [4, 3], color: "#e8b04f" };
   return { dashes: [1, 3], color: "#888" };
@@ -136,7 +141,7 @@ function toVisEdges(edgeList) {
     to: e.to,
     arrows: "to",
     ...edgeStyle(e),
-    title: e.slot ? e.slot + " (" + e.param + ")" : e.param,
+    title: (e.slot ? e.slot + " (" + e.param + ")" : e.param) + (e.reason ? " — " + e.reason : ""),
   }));
 }
 
@@ -148,6 +153,7 @@ const network = new vis.Network(
 
 function activeTypes() {
   const t = [];
+  if (document.getElementById("chkDocumented").checked) t.push("documented");
   if (document.getElementById("chkStructural").checked) t.push("structural");
   if (document.getElementById("chkHeuristic").checked) t.push("heuristic");
   if (document.getElementById("chkUserInput").checked) t.push("user_input");
@@ -201,6 +207,7 @@ function rerender() {
 
 document.getElementById("btnShowcase").onclick = () => { mode = "showcase"; rerender(); };
 document.getElementById("btnFull").onclick = () => { mode = "full"; rerender(); };
+document.getElementById("chkDocumented").onchange = rerender;
 document.getElementById("chkStructural").onchange = rerender;
 document.getElementById("chkHeuristic").onchange = rerender;
 document.getElementById("chkUserInput").onchange = rerender;
