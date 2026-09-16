@@ -9,7 +9,7 @@ interface GNode {
   description?: string;
   prompt?: string;
 }
-interface GEdge { from: string; to: string; slot: string; param: string; type: string; required: boolean }
+interface GEdge { from: string; to: string; slot: string; param: string; type: string; required: boolean; reason?: string }
 
 const graph: { meta: { toolCount: number; nodeCount: number; edgeCount: number }; nodes: GNode[]; edges: GEdge[] } =
   JSON.parse(await readFile("dependency_graph.json", "utf-8"));
@@ -32,19 +32,27 @@ const examples = EXAMPLE_RULES.flatMap((rule) => {
     console.warn(`example not found in graph: ${rule.slot} into ${rule.consumer}`);
     return [];
   }
-  return [{ target: hit.to, label: rule.label }];
+  return [{ target: hit.to, label: rule.label, slot: rule.slot }];
 });
+
+// eval/results.json is written by `bun run eval`; the viewer shows it when present
+const evalResults = await readFile("eval/results.json", "utf-8").then(JSON.parse).catch(() => null);
 
 // compact payload: the full dependency_graph.json is ~3.7MB of repeated keys
 const clip = (s: string | undefined, n: number) => (s && s.length > n ? `${s.slice(0, n - 1)}…` : s ?? "");
 const TYPE_CODE: Record<string, string> = { documented: "d", structural: "s", heuristic: "h", user_input: "u" };
 const data = {
-  meta: { toolCount: graph.meta.toolCount },
+  meta: { toolCount: graph.meta.toolCount, eval: evalResults },
   tools: graph.nodes
     .filter((n) => n.kind === "tool")
     .map((n) => ({ id: n.id, name: n.name, tk: n.toolkit === "github" ? "h" : "g", svc: n.service, desc: clip(n.description, 900) })),
   inputs: graph.nodes.filter((n) => n.kind === "user_input").map((n) => ({ id: n.id, name: n.name, prompt: clip(n.prompt, 400) })),
-  edges: graph.edges.map((e) => [e.from, e.to, e.slot, e.param, TYPE_CODE[e.type], e.required ? 1 : 0]),
+  // documented edges carry the doc sentence that names the precursor
+  edges: graph.edges.map((e) => {
+    const row: (string | number)[] = [e.from, e.to, e.slot, e.param, TYPE_CODE[e.type]!, e.required ? 1 : 0];
+    if (e.type === "documented" && e.reason) row.push(e.reason);
+    return row;
+  }),
 };
 
 const css = await readFile("src/viewer/style.css", "utf-8");

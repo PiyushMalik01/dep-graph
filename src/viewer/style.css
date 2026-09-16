@@ -117,6 +117,25 @@ aside h3 span { font-weight: 400; color: var(--muted); }
 .ask-text { font-size: 13px; color: var(--muted); margin: 2px 0 0; }
 
 .empty { color: var(--muted); font-size: 14px; }
+
+/* run plan: a real sequence, so it is numbered */
+.plan { margin: 4px 0 0; padding-left: 22px; font-size: 14px; }
+.plan li { padding: 4px 0; }
+.plan li::marker { color: var(--muted); font-size: 13px; }
+.step-note { display: block; font-size: 13px; color: var(--muted); }
+.step-ask { color: var(--ask); }
+.step-ask .param-name { color: var(--ink); }
+.link.target { font-weight: 600; }
+.plan-optional-head { font-size: 13px; color: var(--muted); margin: 14px 0 2px; }
+.sources li.chain { display: block; }
+.sources li.has-quote { flex-wrap: wrap; }
+.quote { flex-basis: 100%; font-size: 13px; color: var(--muted); font-style: italic; quotes: "\201C" "\201D"; margin: 1px 0 4px; }
+
+.eval { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 4px; }
+.eval th { text-align: left; font-weight: 500; color: var(--muted); border-bottom: 1px solid var(--rule); padding: 4px 6px 4px 0; }
+.eval td { padding: 5px 6px 5px 0; border-bottom: 1px solid var(--paper); font-variant-numeric: tabular-nums; }
+.eval td:nth-child(n + 2), .eval th:nth-child(n + 2) { text-align: right; }
+.note { font-size: 13px; color: var(--muted); max-width: 60ch; }
 .intro p { font-size: 14px; max-width: 60ch; }
 .intro ol { padding-left: 20px; font-size: 14px; }
 .intro li { margin-bottom: 6px; }

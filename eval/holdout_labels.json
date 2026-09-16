@@ -1,0 +1,772 @@
+[
+ {
+  "from": "GOOGLESUPER_FETCH_EMAILS",
+  "to": "GOOGLESUPER_ADD_LABEL_TO_EMAIL",
+  "param": "message_id",
+  "type": "documented",
+  "correct": true
+ },
+ {
+  "from": "GOOGLESUPER_LIST_LABELS",
+  "to": "GOOGLESUPER_BATCH_MODIFY_MESSAGES",
+  "param": "removeLabelIds",
+  "type": "documented",
+  "correct": true
+ },
+ {
+  "from": "GOOGLESUPER_SEARCH_DOCUMENTS",
+  "to": "GOOGLESUPER_CREATE_COMMENT",
+  "param": "file_id",
+  "type": "documented",
+  "correct": true
+ },
+ {
+  "from": "GOOGLESUPER_FIND_FOLDER",
+  "to": "GOOGLESUPER_CREATE_FILE_FROM_TEXT",
+  "param": "parent_id",
+  "type": "documented",
+  "correct": true
+ },
+ {
+  "from": "GOOGLESUPER_LIST_CALENDARS",
+  "to": "GOOGLESUPER_EVENTS_LIST",
+  "param": "calendarId",
+  "type": "documented",
+  "correct": true
+ },
+ {
+  "from": "GOOGLESUPER_LIST_CALENDARS",
+  "to": "GOOGLESUPER_FIND_EVENT",
+  "param": "calendar_id",
+  "type": "documented",
+  "correct": true
+ },
+ {
+  "from": "GOOGLESUPER_LIST_DRAFTS",
+  "to": "GOOGLESUPER_GET_DRAFT",
+  "param": "draft_id",
+  "type": "documented",
+  "correct": true
+ },
+ {
+  "from": "GOOGLESUPER_GET_SPREADSHEET_INFO",
+  "to": "GOOGLESUPER_INSERT_DIMENSION",
+  "param": "sheet_id",
+  "type": "documented",
+  "correct": true
+ },
+ {
+  "from": "GOOGLESUPER_GET_DOCUMENT_BY_ID",
+  "to": "GOOGLESUPER_INSERT_IMAGE_IN_TABLE_CELL",
+  "param": "table_start_index",
+  "type": "documented",
+  "correct": true
+ },
+ {
+  "from": "GOOGLESUPER_GET_DOCUMENT_BY_ID",
+  "to": "GOOGLESUPER_INSERT_TABLE_ROW",
+  "param": "index",
+  "type": "documented",
+  "correct": true
+ },
+ {
+  "from": "GOOGLESUPER_LIST_TASK_LISTS",
+  "to": "GOOGLESUPER_INSERT_TASK",
+  "param": "tasklist_id",
+  "type": "documented",
+  "correct": true
+ },
+ {
+  "from": "GOOGLESUPER_LIST_CONFERENCE_RECORDS",
+  "to": "GOOGLESUPER_LIST_PARTICIPANTS",
+  "param": "parent",
+  "type": "documented",
+  "correct": true
+ },
+ {
+  "from": "GOOGLESUPER_LIST_LABELS",
+  "to": "GOOGLESUPER_MODIFY_THREAD_LABELS",
+  "param": "add_label_ids",
+  "type": "documented",
+  "correct": true
+ },
+ {
+  "from": "GOOGLESUPER_LIST_TABLES",
+  "to": "GOOGLESUPER_QUERY_TABLE",
+  "param": "sql",
+  "type": "documented",
+  "correct": true
+ },
+ {
+  "from": "GOOGLESUPER_FETCH_EMAILS",
+  "to": "GOOGLESUPER_REPLY_TO_THREAD",
+  "param": "thread_id",
+  "type": "documented",
+  "correct": true
+ },
+ {
+  "from": "GOOGLESUPER_GET_SPREADSHEET_INFO",
+  "to": "GOOGLESUPER_SET_DATA_VALIDATION_RULE",
+  "param": "sheet_id",
+  "type": "documented",
+  "correct": true
+ },
+ {
+  "from": "GOOGLESUPER_GET_SHEET_NAMES",
+  "to": "GOOGLESUPER_SPREADSHEETS_VALUES_APPEND",
+  "param": "range",
+  "type": "documented",
+  "correct": true
+ },
+ {
+  "from": "GOOGLESUPER_GET_DOCUMENT_BY_ID",
+  "to": "GOOGLESUPER_UPDATE_EXISTING_DOCUMENT",
+  "param": "edit_docs",
+  "type": "documented",
+  "correct": true
+ },
+ {
+  "from": "GOOGLESUPER_GET_DOCUMENT_BY_ID",
+  "to": "GOOGLESUPER_UPDATE_TAB_PROPERTIES",
+  "param": "tab_id",
+  "type": "documented",
+  "correct": true
+ },
+ {
+  "from": "GITHUB_GET_A_TREE",
+  "to": "GITHUB_GET_RAW_REPOSITORY_CONTENT",
+  "param": "path",
+  "type": "documented",
+  "correct": true
+ },
+ {
+  "from": "GOOGLESUPER_CREATE_CALENDAR",
+  "to": "GOOGLESUPER_ACL_GET",
+  "param": "calendar_id",
+  "type": "structural",
+  "correct": true
+ },
+ {
+  "from": "GOOGLESUPER_INSERT_MESSAGE",
+  "to": "GOOGLESUPER_BATCH_DELETE_MESSAGES",
+  "param": "messageIds",
+  "type": "structural",
+  "correct": true
+ },
+ {
+  "from": "GOOGLESUPER_GET_CONTACTS",
+  "to": "GOOGLESUPER_GET_PEOPLE",
+  "param": "resource_name",
+  "type": "structural",
+  "correct": true
+ },
+ {
+  "from": "GOOGLESUPER_COPY_FILE",
+  "to": "GOOGLESUPER_LIST_ACCESS_PROPOSALS",
+  "param": "fileId",
+  "type": "structural",
+  "correct": false
+ },
+ {
+  "from": "GOOGLESUPER_UPLOAD_FILE",
+  "to": "GOOGLESUPER_LIST_FILE_PROPERTIES",
+  "param": "fileId",
+  "type": "structural",
+  "correct": true
+ },
+ {
+  "from": "GOOGLESUPER_LIST_PROPERTIES",
+  "to": "GOOGLESUPER_LIST_SEARCH_ADS360_LINKS",
+  "param": "parent",
+  "type": "structural",
+  "correct": true
+ },
+ {
+  "from": "GOOGLESUPER_CREATE_DOCUMENT",
+  "to": "GOOGLESUPER_UNMERGE_TABLE_CELLS",
+  "param": "documentId",
+  "type": "structural",
+  "correct": true
+ },
+ {
+  "from": "GOOGLESUPER_SEARCH_DEVELOPER_METADATA",
+  "to": "GOOGLESUPER_VALUES_GET",
+  "param": "range",
+  "type": "structural",
+  "correct": false
+ },
+ {
+  "from": "GOOGLESUPER_GET_TABLE_SCHEMA",
+  "to": "GOOGLESUPER_VALUES_UPDATE",
+  "param": "range",
+  "type": "structural",
+  "correct": false
+ },
+ {
+  "from": "GITHUB_LIST_ISSUES_ASSIGNED_TO_THE_AUTHENTICATED_USER",
+  "to": "GITHUB_ADD_ASSIGNEES_TO_AN_ISSUE",
+  "param": "issue_number",
+  "type": "structural",
+  "correct": true
+ },
+ {
+  "from": "GITHUB_LIST_TEAMS",
+  "to": "GITHUB_ADD_OR_UPDATE_TEAM_MEMBERSHIP_FOR_USER",
+  "param": "team_slug",
+  "type": "structural",
+  "correct": true
+ },
+ {
+  "from": "GITHUB_LIST_USERS",
+  "to": "GITHUB_ADD_PROJECT_COLLABORATOR",
+  "param": "username",
+  "type": "structural",
+  "correct": true
+ },
+ {
+  "from": "GITHUB_LIST_REPOSITORIES",
+  "to": "GITHUB_ADD_RUNNER_LABELS",
+  "param": "repo",
+  "type": "structural",
+  "correct": true
+ },
+ {
+  "from": "GITHUB_LIST_BRANCHES_FOR_HEAD_COMMIT",
+  "to": "GITHUB_ADD_STATUS_CHECK_CONTEXTS",
+  "param": "branch",
+  "type": "structural",
+  "correct": true
+ },
+ {
+  "from": "GITHUB_SEARCH_COMMITS",
+  "to": "GITHUB_CREATE_A_CHECK_RUN",
+  "param": "head_sha",
+  "type": "structural",
+  "correct": true
+ },
+ {
+  "from": "GITHUB_GET_TOP_REFERRAL_PATHS",
+  "to": "GITHUB_CREATE_A_CHECK_RUN",
+  "param": "path",
+  "type": "structural",
+  "correct": false
+ },
+ {
+  "from": "GITHUB_GET_ORGANIZATION_TEAMS",
+  "to": "GITHUB_CREATE_AN_ORGANIZATION_REPOSITORY",
+  "param": "team_id",
+  "type": "structural",
+  "correct": true
+ },
+ {
+  "from": "GITHUB_LIST_REPOSITORY_SECRETS_WITHOUT_DECRYPTING",
+  "to": "GITHUB_CREATE_OR_UPDATE_A_REPOSITORY_SECRET",
+  "param": "secret_name",
+  "type": "structural",
+  "correct": false
+ },
+ {
+  "from": "GITHUB_LIST_REPOSITORIES",
+  "to": "GITHUB_CREATE_REACTION_FOR_A_COMMIT_COMMENT",
+  "param": "owner",
+  "type": "structural",
+  "correct": true
+ },
+ {
+  "from": "GITHUB_LIST_ACCESSIBLE_REPOSITORIES",
+  "to": "GITHUB_DELETE_A_RELEASE_REACTION",
+  "param": "repo",
+  "type": "structural",
+  "correct": true
+ },
+ {
+  "from": "GITHUB_LIST_SELF_HOSTED_RUNNERS_FOR_AN_ORGANIZATION",
+  "to": "GITHUB_DELETE_A_SELF_HOSTED_RUNNER_FROM_AN_ORGANIZATION",
+  "param": "runner_id",
+  "type": "structural",
+  "correct": true
+ },
+ {
+  "from": "GITHUB_LIST_ENVIRONMENT_SECRETS",
+  "to": "GITHUB_DELETE_DEPENDEBOT_SECRET_BY_NAME",
+  "param": "secret_name",
+  "type": "structural",
+  "correct": false
+ },
+ {
+  "from": "GITHUB_LIST_REPOSITORIES",
+  "to": "GITHUB_DELETE_PENDING_REVIEW",
+  "param": "repo",
+  "type": "structural",
+  "correct": true
+ },
+ {
+  "from": "GITHUB_LIST_TEAM_PROJECTS",
+  "to": "GITHUB_DELETE_PROJECT",
+  "param": "project_id",
+  "type": "structural",
+  "correct": true
+ },
+ {
+  "from": "GITHUB_LIST_REVIEW_COMMENTS_ON_A_PULL_REQUEST",
+  "to": "GITHUB_DELETE_PULL_REQUEST_COMMENT_REACTION",
+  "param": "comment_id",
+  "type": "structural",
+  "correct": true
+ },
+ {
+  "from": "GITHUB_LIST_PACKAGES_FOR_THE_AUTHENTICATED_USER",
+  "to": "GITHUB_DELETE_USER_PACKAGE",
+  "param": "package_name",
+  "type": "structural",
+  "correct": true
+ },
+ {
+  "from": "GITHUB_FIND_REPOSITORIES",
+  "to": "GITHUB_ENABLE_A_WORKFLOW",
+  "param": "owner",
+  "type": "structural",
+  "correct": true
+ },
+ {
+  "from": "GITHUB_LIST_REPOSITORIES",
+  "to": "GITHUB_GET_AN_ENVIRONMENT",
+  "param": "repo",
+  "type": "structural",
+  "correct": true
+ },
+ {
+  "from": "GITHUB_LIST_OWNED_PACKAGE_VERSIONS",
+  "to": "GITHUB_GET_A_PACKAGE_VERSION_FOR_THE_AUTHENTICATED_USER",
+  "param": "package_version_id",
+  "type": "structural",
+  "correct": true
+ },
+ {
+  "from": "GITHUB_LIST_PULL_REQUESTS",
+  "to": "GITHUB_GET_A_REPOSITORY_README",
+  "param": "ref",
+  "type": "structural",
+  "correct": false
+ },
+ {
+  "from": "GITHUB_LIST_ACCESSIBLE_REPOSITORIES",
+  "to": "GITHUB_GET_A_WORKFLOW",
+  "param": "repo",
+  "type": "structural",
+  "correct": true
+ },
+ {
+  "from": "GITHUB_LIST_REPOSITORIES",
+  "to": "GITHUB_GET_DEPLOYMENT_STATUS",
+  "param": "owner",
+  "type": "structural",
+  "correct": true
+ },
+ {
+  "from": "GITHUB_LIST_GISTS_FOR_THE_AUTHENTICATED_USER",
+  "to": "GITHUB_GET_GIST_COMMENT",
+  "param": "gist_id",
+  "type": "structural",
+  "correct": true
+ },
+ {
+  "from": "GITHUB_LIST_PULL_REQUESTS",
+  "to": "GITHUB_GET_THE_COMBINED_STATUS_FOR_A_SPECIFIC_REFERENCE",
+  "param": "ref",
+  "type": "structural",
+  "correct": true
+ },
+ {
+  "from": "GITHUB_LIST_REPO_CODESPACES",
+  "to": "GITHUB_GET_THE_LICENSE_FOR_A_REPOSITORY",
+  "param": "ref",
+  "type": "structural",
+  "correct": false
+ },
+ {
+  "from": "GITHUB_LIST_REPOSITORIES",
+  "to": "GITHUB_GET_THE_REVIEW_HISTORY_FOR_A_WORKFLOW_RUN",
+  "param": "owner",
+  "type": "structural",
+  "correct": true
+ },
+ {
+  "from": "GITHUB_FIND_REPOSITORIES",
+  "to": "GITHUB_LIST_CHECK_RUN_ANNOTATIONS",
+  "param": "owner",
+  "type": "structural",
+  "correct": true
+ },
+ {
+  "from": "GITHUB_LIST_CHECK_SUITES_FOR_A_GIT_REFERENCE",
+  "to": "GITHUB_LIST_CHECK_RUNS_IN_A_CHECK_SUITE",
+  "param": "check_suite_id",
+  "type": "structural",
+  "correct": true
+ },
+ {
+  "from": "GITHUB_GET_ACCESS_RESTRICTIONS",
+  "to": "GITHUB_LIST_DISCUSSIONS",
+  "param": "team_slug",
+  "type": "structural",
+  "correct": false
+ },
+ {
+  "from": "GITHUB_LIST_CODE_SCANNING_ALERTS_FOR_A_REPOSITORY",
+  "to": "GITHUB_LIST_INSTANCES_OF_A_CODE_SCANNING_ALERT",
+  "param": "alert_number",
+  "type": "structural",
+  "correct": true
+ },
+ {
+  "from": "GITHUB_FIND_REPOSITORIES",
+  "to": "GITHUB_LIST_ISSUE_DEPENDENCIES_BLOCKED_BY",
+  "param": "owner",
+  "type": "structural",
+  "correct": true
+ },
+ {
+  "from": "GITHUB_LIST_REPOSITORIES",
+  "to": "GITHUB_LIST_LABELS_FOR_A_SELF_HOSTED_RUNNER_FOR_A_REPOSITORY",
+  "param": "repo",
+  "type": "structural",
+  "correct": true
+ },
+ {
+  "from": "GITHUB_LIST_ACCESSIBLE_REPOSITORIES",
+  "to": "GITHUB_LIST_RELEASE_ASSETS",
+  "param": "repo",
+  "type": "structural",
+  "correct": true
+ },
+ {
+  "from": "GITHUB_LIST_REPOSITORIES",
+  "to": "GITHUB_LIST_REPO_ACCESS_BY_TOKEN",
+  "param": "org",
+  "type": "structural",
+  "correct": true
+ },
+ {
+  "from": "GITHUB_LIST_ACCESSIBLE_REPOSITORIES",
+  "to": "GITHUB_LIST_REPOSITORY_ACTIVITIES",
+  "param": "repo",
+  "type": "structural",
+  "correct": true
+ },
+ {
+  "from": "GITHUB_LIST_REPOSITORIES",
+  "to": "GITHUB_LIST_REPOSITORY_ISSUES",
+  "param": "owner",
+  "type": "structural",
+  "correct": true
+ },
+ {
+  "from": "GITHUB_CREATE_A_PULL_REQUEST",
+  "to": "GITHUB_LIST_REQUESTED_REVIEWERS_FOR_A_PULL_REQUEST",
+  "param": "pull_number",
+  "type": "structural",
+  "correct": true
+ },
+ {
+  "from": "GITHUB_LIST_PULL_REQUESTS",
+  "to": "GITHUB_LIST_REVIEW_COMMENTS_ON_A_PULL_REQUEST",
+  "param": "pull_number",
+  "type": "structural",
+  "correct": true
+ },
+ {
+  "from": "GITHUB_LIST_REPOSITORIES",
+  "to": "GITHUB_LIST_SELF_HOSTED_RUNNERS_FOR_AN_ORGANIZATION",
+  "param": "org",
+  "type": "structural",
+  "correct": true
+ },
+ {
+  "from": "GITHUB_LIST_ACCESSIBLE_REPOSITORIES",
+  "to": "GITHUB_LIST_SELF_HOSTED_RUNNERS_FOR_A_REPOSITORY",
+  "param": "repo",
+  "type": "structural",
+  "correct": true
+ },
+ {
+  "from": "GITHUB_GET_TEAMS_WITH_ACCESS_TO_THE_PROTECTED_BRANCH",
+  "to": "GITHUB_LIST_TEAM_MEMBERS",
+  "param": "team_slug",
+  "type": "structural",
+  "correct": false
+ },
+ {
+  "from": "GITHUB_GET_A_COMMIT",
+  "to": "GITHUB_LIST_WORKFLOW_RUNS_FOR_A_WORKFLOW",
+  "param": "head_sha",
+  "type": "structural",
+  "correct": false
+ },
+ {
+  "from": "GITHUB_LIST_USERS",
+  "to": "GITHUB_LOOKUP_ORGANIZATION_GRAPH_QL",
+  "param": "login",
+  "type": "structural",
+  "correct": true
+ },
+ {
+  "from": "GITHUB_LIST_REPOSITORY_COLLABORATORS",
+  "to": "GITHUB_REMOVE_ALL_ORGANIZATION_ROLES_FOR_A_USER",
+  "param": "username",
+  "type": "structural",
+  "correct": true
+ },
+ {
+  "from": "GITHUB_LIST_USERS",
+  "to": "GITHUB_REMOVE_OUTSIDE_COLLABORATOR_FROM_AN_ORGANIZATION",
+  "param": "username",
+  "type": "structural",
+  "correct": false
+ },
+ {
+  "from": "GITHUB_FIND_REPOSITORIES",
+  "to": "GITHUB_REQUEST_REVIEWERS_FOR_A_PULL_REQUEST",
+  "param": "owner",
+  "type": "structural",
+  "correct": true
+ },
+ {
+  "from": "GITHUB_LIST_PACKAGES_FOR_THE_AUTHENTICATED_USER",
+  "to": "GITHUB_RESTORE_A_PACKAGE_FOR_THE_AUTHENTICATED_USER",
+  "param": "package_name",
+  "type": "structural",
+  "correct": true
+ },
+ {
+  "from": "GITHUB_LIST_REPOSITORIES",
+  "to": "GITHUB_SET_ADMIN_BRANCH_PROTECTION",
+  "param": "owner",
+  "type": "structural",
+  "correct": true
+ },
+ {
+  "from": "GITHUB_LIST_ORGANIZATION_MEMBERS",
+  "to": "GITHUB_SET_USER_ACCESS_RESTRICTIONS",
+  "param": "users",
+  "type": "structural",
+  "correct": true
+ },
+ {
+  "from": "GITHUB_LIST_REPOSITORIES",
+  "to": "GITHUB_UPDATE_A_CODE_SCANNING_ALERT",
+  "param": "owner",
+  "type": "structural",
+  "correct": true
+ },
+ {
+  "from": "GOOGLESUPER_GET_CALENDAR",
+  "to": "GOOGLESUPER_ACL_UPDATE",
+  "param": "calendar_id",
+  "type": "heuristic",
+  "correct": true
+ },
+ {
+  "from": "GOOGLESUPER_GET_PEOPLE",
+  "to": "GOOGLESUPER_ADD_OR_REMOVE_TO_CUSTOMER_LIST",
+  "param": "emails",
+  "type": "heuristic",
+  "correct": true
+ },
+ {
+  "from": "GOOGLESUPER_LIST_KEY_EVENTS",
+  "to": "GOOGLESUPER_BATCH_EVENTS",
+  "param": "event_id",
+  "type": "heuristic",
+  "correct": false
+ },
+ {
+  "from": "GOOGLESUPER_SEARCH_MEDIA_ITEMS",
+  "to": "GOOGLESUPER_BATCH_GET_MEDIA_ITEMS",
+  "param": "mediaItemIds",
+  "type": "heuristic",
+  "correct": true
+ },
+ {
+  "from": "GOOGLESUPER_GET_CALENDAR",
+  "to": "GOOGLESUPER_CALENDAR_LIST_PATCH",
+  "param": "calendar_id",
+  "type": "heuristic",
+  "correct": true
+ },
+ {
+  "from": "GOOGLESUPER_SEARCH_PEOPLE",
+  "to": "GOOGLESUPER_CREATE_EMAIL_DRAFT",
+  "param": "recipient_email",
+  "type": "heuristic",
+  "correct": true
+ },
+ {
+  "from": "GOOGLESUPER_LIST_KEY_EVENTS",
+  "to": "GOOGLESUPER_DELETE_EVENT",
+  "param": "event_id",
+  "type": "heuristic",
+  "correct": false
+ },
+ {
+  "from": "GOOGLESUPER_GET_CALENDAR",
+  "to": "GOOGLESUPER_EVENTS_IMPORT",
+  "param": "calendar_id",
+  "type": "heuristic",
+  "correct": true
+ },
+ {
+  "from": "GOOGLESUPER_GET_PEOPLE",
+  "to": "GOOGLESUPER_FORWARD_MESSAGE",
+  "param": "cc",
+  "type": "heuristic",
+  "correct": true
+ },
+ {
+  "from": "GOOGLESUPER_LIST_ACCESSIBLE_CUSTOMERS",
+  "to": "GOOGLESUPER_MUTATE_AD_GROUP_ASSETS",
+  "param": "customer_id",
+  "type": "heuristic",
+  "correct": true
+ },
+ {
+  "from": "GOOGLESUPER_LIST_ACCESSIBLE_CUSTOMERS",
+  "to": "GOOGLESUPER_MUTATE_ASSETS",
+  "param": "customer_id",
+  "type": "heuristic",
+  "correct": true
+ },
+ {
+  "from": "GOOGLESUPER_LIST_ACCESSIBLE_CUSTOMERS",
+  "to": "GOOGLESUPER_MUTATE_CAMPAIGN_CRITERIA",
+  "param": "customer_id",
+  "type": "heuristic",
+  "correct": true
+ },
+ {
+  "from": "GOOGLESUPER_LIST_ACCESSIBLE_CUSTOMERS",
+  "to": "GOOGLESUPER_MUTATE_CAMPAIGNS",
+  "param": "customer_id",
+  "type": "heuristic",
+  "correct": true
+ },
+ {
+  "from": "GOOGLESUPER_GET_PEOPLE",
+  "to": "GOOGLESUPER_REMOVE_ATTENDEE",
+  "param": "attendee_email",
+  "type": "heuristic",
+  "correct": false
+ },
+ {
+  "from": "GOOGLESUPER_SEARCH_PEOPLE",
+  "to": "GOOGLESUPER_SEND_EMAIL",
+  "param": "bcc",
+  "type": "heuristic",
+  "correct": true
+ },
+ {
+  "from": "GOOGLESUPER_GET_CALENDAR",
+  "to": "GOOGLESUPER_SYNC_EVENTS",
+  "param": "calendar_id",
+  "type": "heuristic",
+  "correct": true
+ },
+ {
+  "from": "GOOGLESUPER_GET_PEOPLE",
+  "to": "GOOGLESUPER_UPDATE_DRAFT",
+  "param": "cc",
+  "type": "heuristic",
+  "correct": true
+ },
+ {
+  "from": "GOOGLESUPER_LIST_REPORT_TASKS",
+  "to": "GOOGLESUPER_UPDATE_TASK_FULL",
+  "param": "task_id",
+  "type": "heuristic",
+  "correct": false
+ },
+ {
+  "from": "GITHUB_LIST_LABELS_FOR_ISSUES_IN_A_MILESTONE",
+  "to": "GITHUB_CREATE_AN_ISSUE",
+  "param": "labels",
+  "type": "heuristic",
+  "correct": true
+ },
+ {
+  "from": "GITHUB_CREATE_OR_UPDATE_A_SECRET_FOR_THE_AUTHENTICATED_USER",
+  "to": "GITHUB_CREATE_OR_UPDATE_AN_ENVIRONMENT_SECRET",
+  "param": "secret_name",
+  "type": "heuristic",
+  "correct": false
+ },
+ {
+  "from": "GITHUB_CREATE_OR_UPDATE_AN_ENVIRONMENT_SECRET",
+  "to": "GITHUB_GET_AN_ENVIRONMENT_SECRET",
+  "param": "secret_name",
+  "type": "heuristic",
+  "correct": true
+ },
+ {
+  "from": "GITHUB_GET_ALL_API_VERSIONS",
+  "to": "GITHUB_GET_A_PACKAGE_VERSION_FOR_AN_ORGANIZATION",
+  "param": "package_version_id",
+  "type": "heuristic",
+  "correct": false
+ },
+ {
+  "from": "GITHUB_SEARCH_LABELS",
+  "to": "GITHUB_LIST_ISSUES_ASSIGNED_TO_THE_AUTHENTICATED_USER",
+  "param": "labels",
+  "type": "heuristic",
+  "correct": true
+ },
+ {
+  "from": "GITHUB_SEARCH_LABELS",
+  "to": "GITHUB_LIST_ORG_ISSUES_FOR_THE_AUTHENTICATED_USER",
+  "param": "labels",
+  "type": "heuristic",
+  "correct": true
+ },
+ {
+  "from": "GITHUB_LIST_LABELS_FOR_ISSUES_IN_A_MILESTONE",
+  "to": "GITHUB_LIST_ORG_ISSUES_FOR_THE_AUTHENTICATED_USER",
+  "param": "labels",
+  "type": "heuristic",
+  "correct": true
+ },
+ {
+  "from": "GITHUB_LIST_USER_PROJECTS",
+  "to": "GITHUB_LIST_ORG_PROJECT_VIEW_ITEMS",
+  "param": "project_number",
+  "type": "heuristic",
+  "correct": false
+ },
+ {
+  "from": "GITHUB_SEARCH_LABELS",
+  "to": "GITHUB_LIST_REPOSITORY_ISSUES",
+  "param": "labels",
+  "type": "heuristic",
+  "correct": true
+ },
+ {
+  "from": "GITHUB_LIST_LABELS_FOR_ISSUES_IN_A_MILESTONE",
+  "to": "GITHUB_SET_LABELS_FOR_AN_ISSUE",
+  "param": "labels",
+  "type": "heuristic",
+  "correct": true
+ },
+ {
+  "from": "GITHUB_LIST_LABELS_FOR_ISSUES_IN_A_MILESTONE",
+  "to": "GITHUB_UPDATE_AN_ISSUE",
+  "param": "labels",
+  "type": "heuristic",
+  "correct": true
+ },
+ {
+  "from": "GITHUB_SEARCH_LABELS",
+  "to": "GITHUB_UPDATE_A_RELEASE_ASSET",
+  "param": "label",
+  "type": "heuristic",
+  "correct": false
+ }
+]

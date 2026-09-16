@@ -24,7 +24,8 @@ const nodes = new Map();
 for (const t of DATA.tools) nodes.set(t.id, { ...t, kind: "tool" });
 for (const i of DATA.inputs) nodes.set(i.id, { ...i, kind: "input" });
 
-const edges = DATA.edges.map(([from, to, slot, param, type, required]) => ({ from, to, slot, param, type: TYPE[type], required: !!required }));
+// the 7th tuple element is the doc sentence behind a documented edge
+const edges = DATA.edges.map(([from, to, slot, param, type, required, quote]) => ({ from, to, slot, param, type: TYPE[type], required: !!required, quote }));
 const incoming = new Map();
 const outgoing = new Map();
 for (const e of edges) {
@@ -214,6 +215,122 @@ function neighbourhood(targetId, { downstream }) {
   return { levels, params, chosen };
 }
 
+// ---------- run plans ----------
+// A concrete order of questions and calls that fills every required parameter
+// of a tool: documented and schema-backed sources first, then the shortest chain.
+const MAX_PLAN_DEPTH = 3;
+
+function paramGroups(toolId) {
+  const groups = new Map();
+  for (const e of incoming.get(toolId) ?? []) {
+    const k = paramKey(e);
+    const g = groups.get(k) ?? { names: [], required: false, edges: [] };
+    if (!g.names.includes(e.param)) g.names.push(e.param);
+    g.required ||= e.required;
+    g.edges.push(e);
+    groups.set(k, g);
+  }
+  for (const g of groups.values()) g.names.sort((x, y) => y.length - x.length || x.localeCompare(y));
+  return [...groups.values()];
+}
+
+// Ways to produce a value for one parameter group, cheapest first.
+const stepKey = (st) => (st.kind === "call" ? "call:" + st.tool : "ask:" + st.param);
+
+// `have` holds steps already in the plan: a route that reuses them is cheaper,
+// so once List repositories is planned for `repo`, List repository issues beats
+// an unrelated issue listing for `issue_number`.
+function fillOptions(g, depth, visiting, have = new Set()) {
+  const ask = g.edges.find((e) => e.type === "user_input");
+  // a required value with both an ask node and tool sources is human-authored
+  // (subject, body): the agent asks rather than looking it up.
+  if (ask) return [{ steps: [{ kind: "ask", param: g.names[0], prompt: nodes.get(ask.from).prompt }], cost: 1 }];
+  const options = [];
+  if (depth < MAX_PLAN_DEPTH) {
+    for (const e of g.edges) {
+      if (visiting.has(e.from) || !allowed(e) || options.some((o) => o.from === e.from)) continue;
+      const sub = planSteps(e.from, depth + 1, new Set([...visiting, e.from]));
+      options.push({
+        from: e.from,
+        steps: sub.map((st, i) => (i === sub.length - 1 ? { ...st, gives: [g.names[0]], how: e.type } : st)),
+        cost: RANK[e.type] * 2 + sub.filter((st) => !have.has(stepKey(st))).length,
+      });
+    }
+  }
+  options.sort((a, b) => a.cost - b.cost);
+  return options.length ? options : [{ steps: [{ kind: "ask", param: g.names[0], prompt: "" }], cost: 1 }];
+}
+
+function fillGroup(g, depth, visiting, have) {
+  return fillOptions(g, depth, visiting, have)[0];
+}
+
+// `alsoFill`: slots to treat as required at the top level. Send Email's
+// recipient is optional in the schema (one of to/cc/bcc), but it is the point of the example.
+function planSteps(toolId, depth = 0, visiting = new Set([toolId]), alsoFill = new Set()) {
+  const steps = [];
+  const byKey = new Map();
+  const add = (st) => {
+    const existing = byKey.get(stepKey(st));
+    // one call can supply several values (List repositories gives repo and owner)
+    if (existing) {
+      if (st.gives && !existing.gives.includes(st.gives)) existing.gives.push(st.gives);
+      return;
+    }
+    const copy = { ...st, gives: st.gives ? [st.gives] : [] };
+    byKey.set(stepKey(st), copy);
+    steps.push(copy);
+  };
+  for (const g of paramGroups(toolId).filter((g) => g.required || g.edges.some((e) => alsoFill.has(e.slot)))) {
+    for (const st of fillGroup(g, depth, visiting, new Set(byKey.keys())).steps) add({ ...st, gives: st.gives?.[0] ?? st.gives });
+  }
+  add({ kind: "call", tool: toolId });
+  return steps;
+}
+
+function renderSteps(steps, target) {
+  return `<ol class="plan">${steps.map((st) => {
+    if (st.kind === "ask") {
+      return `<li><span class="step-ask">Ask the user for <span class="param-name">${esc(st.param)}</span></span>${st.prompt ? `<span class="step-note">${esc(truncate(st.prompt, 120))}</span>` : ""}</li>`;
+    }
+    const n = nodes.get(st.tool);
+    const isTarget = st.tool === target;
+    return `<li>Call <button class="link${isTarget ? " target" : ""}" data-tool="${esc(st.tool)}">${esc(n.name)}</button>${st.gives?.length ? `<span class="step-note">to get ${st.gives.map((g) => `<span class="param-name">${esc(g)}</span>`).join(" and ")}${st.how === "documented" ? ", as its docs direct" : ""}</span>` : ""}</li>`;
+  }).join("")}</ol>`;
+}
+
+// optional parameters that a lookup can fill, shown as a one-line chain
+function optionalChains(toolId, alsoFill = new Set()) {
+  return paramGroups(toolId)
+    .filter((g) => !g.required && !g.edges.some((e) => alsoFill.has(e.slot)) && g.edges.some((e) => e.type !== "user_input"))
+    .map((g) => {
+      // the two cheapest routes, so a lookup-by-name route shows next to a list-everything one
+      const chain = fillOptions(g, 0, new Set([toolId]))
+        .slice(0, 3)
+        .map((o) => o.steps.map((st) => (st.kind === "ask" ? `ask for ${st.param}` : nodes.get(st.tool).name)).join(" → "))
+        .join(", or ");
+      return { names: g.names, chain };
+    });
+}
+
+// other ways to fill the example's value, so name -> Search People shows next to Get contacts
+function routesFor(toolId, slot) {
+  const g = paramGroups(toolId).find((g) => g.edges.some((e) => e.slot === slot));
+  if (!g) return "";
+  const routes = fillOptions(g, 0, new Set([toolId])).slice(1, 4);
+  if (!routes.length) return "";
+  return `<p class="plan-optional-head">Other ways to get <span class="param-name">${esc(g.names[0])}</span></p>
+    <ul class="sources">${routes.map((o) => `<li class="chain"><span class="step-note">${esc(o.steps.map((st) => (st.kind === "ask" ? `ask the user for ${st.param}` : nodes.get(st.tool).name)).join(" → ").replace(/^./, (c) => c.toUpperCase()))}</span></li>`).join("")}</ul>`;
+}
+
+function planBlock(toolId, alsoFill = new Set()) {
+  const steps = planSteps(toolId, 0, new Set([toolId]), alsoFill);
+  const optional = optionalChains(toolId, alsoFill);
+  return `${renderSteps(steps, toolId)}${optional.length ? `
+    <p class="plan-optional-head">Optional values a lookup can fill</p>
+    <ul class="sources">${optional.slice(0, 8).map((o) => `<li class="chain"><span class="param-name">${esc(o.names.join(", "))}</span><span class="step-note">${esc(o.chain)}</span></li>`).join("")}</ul>` : ""}`;
+}
+
 // ---------- views ----------
 function showExamples() {
   const merged = { levels: new Map(), params: new Map(), chosen: [] };
@@ -231,8 +348,10 @@ function showExamples() {
     <div class="intro">
       <h2>Tool dependency graph</h2>
       <p>${DATA.meta.toolCount.toLocaleString()} Google Super and GitHub tools. An arrow means a tool's output, or the user's answer, fills a parameter the next tool needs.</p>
-      <h3>The two examples from the brief</h3>
-      <ol>${EXAMPLES.map((ex) => `<li><button class="link" data-tool="${esc(ex.target)}">${esc(nodes.get(ex.target).name)}</button>: ${esc(ex.label)}</li>`).join("")}</ol>
+      ${EXAMPLES.map((ex) => `
+        <h3><button class="link" data-tool="${esc(ex.target)}">${esc(nodes.get(ex.target).name)}</button> <span>${esc(ex.label)}</span></h3>
+        ${planBlock(ex.target, new Set([ex.slot]))}${ex.slot ? routesFor(ex.target, ex.slot) : ""}`).join("")}
+      ${evalBlock()}
       <h3>How links were found</h3>
       <ul class="sources">
         <li><span><span class="swatch documented"></span> Named in the tool's own docs</span><span class="how">${count("documented")}</span></li>
@@ -242,6 +361,22 @@ function showExamples() {
       </ul>
       <p class="empty">Click any tool in the graph, or search above, to see what it needs and what it unlocks.</p>
     </div>`;
+}
+
+function evalBlock() {
+  const ev = DATA.meta.eval;
+  if (!ev?.holdout) return "";
+  const row = (label, t) => {
+    const r = ev.holdout[t];
+    return `<tr><td>${label}</td><td>${Math.round((100 * r.correct) / r.labelled)}%</td><td>${r.correct}/${r.labelled}</td><td>${r.edgesInGraph.toLocaleString()}</td></tr>`;
+  };
+  return `
+    <h3>How accurate the links are</h3>
+    <table class="eval">
+      <thead><tr><th>Link type</th><th>Precision</th><th>Labelled</th><th>In graph</th></tr></thead>
+      <tbody>${row("Named in docs", "documented")}${row("Schema returns it", "structural")}${row("Name suggests it", "heuristic")}</tbody>
+    </table>
+    <p class="note">Hand-checked on a random held-out sample drawn after tuning. About ${Math.round(ev.holdout.estimatedPrecision * 100)}% of tool-to-tool links are correct overall, up from about 55% before the eval-driven fixes. Details in NOTES.md.</p>`;
 }
 
 function count(type) {
@@ -274,7 +409,9 @@ function showTool(id) {
     <div class="slug">${esc(n.id)}</div>
     <div class="toolkit"><span class="dot ${toolkitOf(n)}"></span>${toolkitOf(n) === "github" ? "GitHub" : `Google Super, ${esc(SERVICE_LABEL[n.svc] ?? n.svc)}`}</div>
     ${n.desc ? `<p class="desc clamped" id="desc">${esc(n.desc)}</p>${n.desc.length > 220 ? '<button class="more" id="more">Show full description</button>' : ""}` : ""}
-    <h3>Before calling it</h3>
+    <h3>How to run it</h3>
+    ${planBlock(id)}
+    <h3>Every source, by parameter</h3>
     ${sortedParams.length === 0 ? '<p class="empty">No parameters that another tool or the user has to supply.</p>' : sortedParams.map(([param, p]) => paramBlock(param, p)).join("")}
     <h3>What it unlocks <span>${unlocks.length ? `${unlocks.length} tool${unlocks.length === 1 ? "" : "s"}` : ""}</span></h3>
     ${unlocks.length === 0 ? '<p class="empty">No other tool uses its output.</p>' : `<ul class="sources">${unlocks.slice(0, 40).map((e) => `<li><button class="link" data-tool="${esc(e.to)}">${esc(nodes.get(e.to).name)}</button><span class="how ${e.type === "documented" ? "documented" : ""}">${esc(e.params.join(", "))}</span></li>`).join("")}</ul>${unlocks.length > 40 ? `<p class="empty">and ${unlocks.length - 40} more</p>` : ""}`}
@@ -289,7 +426,7 @@ function paramBlock(param, p) {
     <ul class="sources">${sources.map((e) => {
       const src = nodes.get(e.from);
       if (src.kind === "input") return `<li><span class="ask-text">${esc(truncate(src.prompt, 160))}</span><span class="how ask">ask the user</span></li>`;
-      return `<li><button class="link" data-tool="${esc(src.id)}">${esc(src.name)}</button><span class="how ${e.type === "documented" ? "documented" : ""}">${HOW[e.type]}</span></li>`;
+      return `<li class="${e.quote ? "has-quote" : ""}"><button class="link" data-tool="${esc(src.id)}">${esc(src.name)}</button><span class="how ${e.type === "documented" ? "documented" : ""}">${HOW[e.type]}</span>${e.quote ? `<q class="quote">${esc(e.quote)}</q>` : ""}</li>`;
     }).join("")}</ul>
   </div>`;
 }
@@ -310,16 +447,17 @@ function showServices() {
   const size = new Map();
   for (const t of tools) size.set(t.svc, (size.get(t.svc) ?? 0) + 1);
   const pairs = new Map();
+  const internal = new Map();
   for (const e of edges) {
     if (e.type === "user_input" || !allowed(e)) continue;
     const a = nodes.get(e.from).svc;
     const b = nodes.get(e.to).svc;
-    if (a === b) continue;
+    if (a === b) { internal.set(a, (internal.get(a) ?? 0) + 1); continue; }
     pairs.set(a + ">" + b, (pairs.get(a + ">" + b) ?? 0) + 1);
   }
   const visNodes = [...size].map(([svc, n]) => ({
     id: svc,
-    label: `${SERVICE_LABEL[svc] ?? svc}\n${n} tools`,
+    label: `${SERVICE_LABEL[svc] ?? svc}\n${n} tools, ${(internal.get(svc) ?? 0).toLocaleString()} links inside`,
     shape: "dot",
     size: 10 + Math.sqrt(n) * 2.6,
     color: { background: svc === "github" ? COLOR.github : COLOR.google, border: "#ffffff", highlight: { background: COLOR.ink, border: COLOR.ink } },
@@ -332,7 +470,7 @@ function showServices() {
     return { from, to, width: 1 + (c / max) * 7, color: { color: COLOR.muted, opacity: 0.55 }, title: `${c} links from ${SERVICE_LABEL[from]} to ${SERVICE_LABEL[to]}` };
   });
   draw(visNodes, visEdges, "services");
-  caption("How services depend on each other", "Line width is the number of links between services; click a service to list its tools");
+  caption("How services depend on each other", "Most links stay inside a service; only hand-offs between services are drawn. Click a service to list its tools");
   $("#panel").innerHTML = `
     <h2>Services</h2>
     <p class="desc">Google Super bundles ${[...size.keys()].filter((k) => k !== "github" && k !== "unknown").length} Google products. Most links stay inside one service. The ones that cross are hand-offs between products, mostly Contacts supplying email addresses.</p>

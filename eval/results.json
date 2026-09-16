@@ -1,0 +1,69 @@
+{
+  "development": {
+    "documented": {
+      "before": [
+        22,
+        25
+      ],
+      "after": [
+        22,
+        22
+      ],
+      "removedWrong": 3,
+      "removedCorrect": 0
+    },
+    "structural": {
+      "before": [
+        34,
+        60
+      ],
+      "after": [
+        34,
+        37
+      ],
+      "removedWrong": 23,
+      "removedCorrect": 0
+    },
+    "heuristic": {
+      "before": [
+        12,
+        40
+      ],
+      "after": [
+        9,
+        10
+      ],
+      "removedWrong": 27,
+      "removedCorrect": 3
+    }
+  },
+  "holdout": {
+    "documented": {
+      "correct": 20,
+      "labelled": 20,
+      "edgesInGraph": 89
+    },
+    "structural": {
+      "correct": 48,
+      "labelled": 60,
+      "edgesInGraph": 5815
+    },
+    "heuristic": {
+      "correct": 22,
+      "labelled": 30,
+      "edgesInGraph": 188
+    },
+    "estimatedPrecision": 0.8
+  },
+  "readmeExamples": {
+    "LIST_THREADS -> REPLY_TO_THREAD.thread_id": true,
+    "GET_CONTACTS -> SEND_EMAIL.recipient_email": true,
+    "SEARCH_PEOPLE -> SEND_EMAIL.recipient_email": true,
+    "ask user -> SEARCH_PEOPLE.query": true
+  },
+  "docAgreement": {
+    "refs": 58,
+    "foundRanked": 34,
+    "foundAnywhere": 46
+  }
+}

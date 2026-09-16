@@ -7,6 +7,7 @@ import {
   resolveSlot,
   slotNouns,
   slotsForService,
+  tailNamesNoun,
   tokenNamesNoun,
   type Service,
 } from "./ontology.ts";
@@ -20,7 +21,12 @@ interface RawTool {
   toolkit?: { slug?: string; name?: string };
 }
 
-type Requirement = Leaf & { slot: string | null; human: boolean; docRefs: string[] };
+// docQuotes: the sentence of the param's description that names each precursor
+type Requirement = Leaf & { slot: string | null; human: boolean; docRefs: string[]; docQuotes: Record<string, string> };
+
+// leaf names that identify the tool's own entity when required as input:
+// GET_DOCUMENT_BY_ID(id), GET_PROPERTY(name), GET_A_PROJECT(project_number).
+const CONTEXTUAL_INPUT = /^(id|name|number|key|slug)$/;
 type Production = Leaf & { slot: string | null; primary: boolean };
 
 interface ToolInfo {
@@ -32,6 +38,9 @@ interface ToolInfo {
   slugTokens: string[];
   requires: Requirement[];
   produces: Production[];
+  // slots the tool cannot run without, i.e. values it needs rather than discovers
+  requiredSlots: Set<string>;
+  requiresOwnEntity: boolean;
 }
 
 const DISCOVERY_VERBS = /^(LIST|SEARCH|FIND|QUERY|FETCH|GET_ALL|BATCH_GET)/;
@@ -47,8 +56,15 @@ function verbOf(slug: string): string {
   return slug.replace(/^(GOOGLESUPER|GITHUB)_/, "");
 }
 
+function isMutation(slug: string): boolean {
+  const v = verbOf(slug);
+  // ADD_LABEL_TO_EMAIL / ADD_ASSIGNEES_TO_AN_ISSUE attach to an existing entity
+  return MUTATION_VERB.test(v) || /^ADD_.*_TO_/.test(v);
+}
+
 function verbWeight(slug: string): number {
   const v = verbOf(slug);
+  if (/^ADD_.*_TO_/.test(v)) return -3;
   if (DISCOVERY_VERBS.test(v)) return 3;
   if (GET_VERB.test(v)) return 2;
   if (CREATE_VERB.test(v)) return 1;
@@ -82,18 +98,26 @@ async function loadTools(path: string): Promise<RawTool[]> {
 const APP_PREFIX = /^(GMAIL|GOOGLEDRIVE|GOOGLECALENDAR|GOOGLESHEETS|GOOGLEDOCS|GOOGLESLIDES|GOOGLEFORMS|GOOGLETASKS|GOOGLEPHOTOS|GOOGLECONTACTS|GOOGLEMEET|GOOGLE_ANALYTICS|GOOGLEADS|GOOGLE_MAPS|GOOGLEMAPS|PEOPLE)_/;
 const SOURCE_VERB = /^(LIST|SEARCH|FIND|QUERY|FETCH|GET|READ|LOOKUP|CREATE|ADD|INSERT|UPLOAD)/;
 
-function docRefsIn(text: string, self: string, slugs: Set<string>): string[] {
-  const out = new Set<string>();
+function docRefsIn(text: string, self: string, slugs: Set<string>): Record<string, string> {
+  const out: Record<string, string> = {};
   for (const m of text.matchAll(/\b([A-Z][A-Z0-9]+(?:_[A-Z0-9]+){2,})\b/g)) {
     const raw = m[1]!;
     // "do NOT use GMAIL_X", "instead of GMAIL_X" name the wrong tool, not a precursor
     const before = text.slice(Math.max(0, m.index! - 30), m.index).toLowerCase();
     if (/\b(not|instead of|rather than|unlike|avoid)\b/.test(before)) continue;
+    // the sentence points at an alternative or a sanity check, not a source:
+    // "To search PRs across all repos, use GITHUB_FIND_PULL_REQUESTS instead",
+    // "use GMAIL_LIST_LABELS to check existing labels".
+    const start = Math.max(text.lastIndexOf(". ", m.index!), text.lastIndexOf("; ", m.index!)) + 1;
+    const endDot = text.indexOf(". ", m.index!);
+    const quote = text.slice(start, endDot === -1 ? undefined : endDot + 1).trim().replace(/\s+/g, " ");
+    const sentence = quote.toLowerCase();
+    if (/\binstead\b|\balternatively\b|\bto check\b|^\s*to (add|remove|search|list)\b|\bto (add|remove)\/(add|remove)\b/.test(sentence)) continue;
     const candidates = [raw, `GOOGLESUPER_${raw}`, `GOOGLESUPER_${raw.replace(APP_PREFIX, "")}`, `GITHUB_${raw.replace(/^GITHUB_/, "")}`];
     const hit = candidates.find((c) => c !== self && slugs.has(c));
-    if (hit && SOURCE_VERB.test(verbOf(hit))) out.add(hit);
+    if (hit && SOURCE_VERB.test(verbOf(hit)) && !(hit in out)) out[hit] = quote.length > 240 ? `${quote.slice(0, 239)}…` : quote;
   }
-  return [...out];
+  return out;
 }
 
 function buildToolInfo(t: RawTool, slugs: Set<string>): ToolInfo {
@@ -107,16 +131,19 @@ function buildToolInfo(t: RawTool, slugs: Set<string>): ToolInfo {
   // SEND_EMAIL's recipient_email is optional only because "one of to/cc/bcc" is.
   // required-but-unresolvable leaves are kept too, as ask-the-user inputs.
   const requires = inputLeaves
-    .map((l) => ({
-      ...l,
-      slot: resolveSlot(service, l.name),
-      human: isHumanParam(l.name),
-      docRefs: docRefsIn(l.description, t.slug, slugs),
-    }))
+    .map((l) => {
+      // a boolean flag is never "obtained" from another tool, whatever its docs mention
+      const docQuotes = l.type === "boolean" ? {} : docRefsIn(l.description, t.slug, slugs);
+      return { ...l, slot: resolveSlot(service, l.name), human: isHumanParam(l.name), docRefs: Object.keys(docQuotes), docQuotes };
+    })
     .filter((l) => l.required || l.slot || l.docRefs.length > 0);
 
+  const requiredLeaves = inputLeaves.filter((l) => l.required);
+  const requiredSlots = new Set(requiredLeaves.map((l) => resolveSlot(service, l.name)).filter(Boolean) as string[]);
+  const requiresOwnEntity = requiredLeaves.some((l) => CONTEXTUAL_INPUT.test(l.name));
+
   const produces = flattenSchema(t.outputParameters as never).map((l) => {
-    const r = resolveOutputSlot(service, l.path, l.name, entity);
+    const r = resolveOutputSlot(service, l.path, l.name, slugHead(t.slug).slice(-2).join("_") || entity);
     return { ...l, slot: r?.slot ?? null, primary: r?.primary ?? false };
   });
 
@@ -129,6 +156,8 @@ function buildToolInfo(t: RawTool, slugs: Set<string>): ToolInfo {
     slugTokens: tokenize(verbOf(t.slug)),
     requires,
     produces,
+    requiredSlots,
+    requiresOwnEntity,
   };
 }
 
@@ -144,7 +173,10 @@ function heuristicProduces(tool: ToolInfo, slot: string): boolean {
   if (nouns.length === 0) return false;
   const v = verbOf(tool.slug);
   if (!DISCOVERY_VERBS.test(v) && !CREATE_VERB.test(v) && !GET_VERB.test(v)) return false;
-  return tool.slugTokens.some((tok) => nouns.some((n) => tokenNamesNoun(tok, n)));
+  // the tool must be *about* the entity: GET_PAGES_DNS_HEALTH_CHECK is not a
+  // source of check runs, LIST_DEPLOYMENT_BRANCH_POLICIES is not a source of branches.
+  const head = slugHead(tool.slug);
+  return nouns.some((n) => tailNamesNoun(head, n));
 }
 
 interface Node {
@@ -179,6 +211,45 @@ interface Producer {
 }
 
 const FAN_IN_CAP = 5;
+
+// Creation tools legitimately take an entity and hand back a *new* one of the
+// same kind (COPY_DOCUMENT needs a document_id and returns another).
+const MAKES_NEW = /^(CREATE|COPY|DUPLICATE|UPLOAD_FILE|INSERT|IMPORT|GENERATE|CONFIGURE)/;
+
+/**
+ * A tool that needs a value as input cannot be how an agent discovers it:
+ * GET_AN_ISSUE(issue_number) does not yield an issue_number you don't already
+ * have. This was the largest error class in the hand-labelled sample.
+ */
+function needsWhatItProvides(tool: ToolInfo, slot: string): boolean {
+  if (MAKES_NEW.test(verbOf(tool.slug)) && lastEntityMatches(tool, slot)) return false;
+  if (tool.requiredSlots.has(slot)) return true;
+  return tool.requiresOwnEntity && entityMatches(tool, slot);
+}
+
+// Qualifiers that scope an entity. A webhook id from LIST_ORGANIZATION_WEBHOOKS
+// is not valid for TEST_REPOSITORY_WEBHOOK, nor an issue reaction for
+// DELETE_PULL_REQUEST_COMMENT_REACTION.
+const SCOPES: Record<string, string> = {
+  org: "org", orgs: "org", organization: "org", organizations: "org",
+  repository: "repo", repositories: "repo", repo: "repo", repos: "repo",
+  enterprise: "enterprise", team: "team", teams: "team", environment: "environment", environments: "environment",
+  issue: "issue", issues: "issue", pull: "pull", gist: "gist", gists: "gist", release: "release", releases: "release",
+  discussion: "discussion", discussions: "discussion", deploy: "deploy", dependabot: "dependabot", codespaces: "codespaces",
+};
+// repo coordinates are shared by every scope, so they are never scope-checked
+const UNSCOPED_SLOTS = new Set(["github.owner", "github.repo", "github.repository_id", "github.username", "github.branch", "github.ref", "github.commit_sha", "github.path", "github.tag"]);
+
+function scopesOf(slug: string): Set<string> {
+  return new Set(tokenize(verbOf(slug)).map((t) => SCOPES[t]).filter(Boolean) as string[]);
+}
+
+function scopeMismatch(producer: string, consumer: string, slot: string): boolean {
+  if (UNSCOPED_SLOTS.has(slot) || !slot.startsWith("github.")) return false;
+  const a = scopesOf(producer);
+  const b = scopesOf(consumer);
+  return a.size > 0 && b.size > 0 && ![...a].some((x) => b.has(x));
+}
 // repo coordinates (owner/repo) are consumed by ~600 GitHub tools; five sources
 // each would make them ~40% of all edges without adding information.
 const UBIQUITOUS_CONSUMERS = 100;
@@ -245,6 +316,9 @@ async function main() {
     nodes.set(t.slug, { id: t.slug, kind: "tool", toolkit: t.toolkit, service: t.service, name: t.name, description: t.description });
   }
 
+  // how often the schema join, on its own, agrees with the precursor the docs name
+  const docAgreement = { refs: 0, foundRanked: 0, foundAnywhere: 0 };
+
   const edges: Edge[] = [];
   const seenPairs = new Set<string>();
   let edgeCounter = 0;
@@ -272,17 +346,20 @@ async function main() {
           required: req.required,
           type: "documented",
           confidence: 0.95,
-          reason: `${consumer.slug}.${req.name} description names ${ref}`,
+          reason: req.docQuotes[ref] ?? `${consumer.slug}.${req.name} description names ${ref}`,
         });
       }
 
       // 2. slot join, ranked and capped
-      const candidates = (slot ? producers.get(slot) ?? [] : []).filter((p) => p.tool !== consumer.slug);
+      const allCandidates = (slot ? producers.get(slot) ?? [] : []).filter((p) => p.tool !== consumer.slug);
+      const candidates = allCandidates.filter(
+        (p) => !needsWhatItProvides(bySlug.get(p.tool)!, slot!) && !scopeMismatch(p.tool, consumer.slug, slot!)
+      );
       if (slot && candidates.length > 0) {
         satisfied = true;
         const scored = candidates.map((p) => {
           const pt = bySlug.get(p.tool)!;
-          const mutation = MUTATION_VERB.test(verbOf(pt.slug));
+          const mutation = isMutation(pt.slug);
           const score =
             (p.primary ? 100 : 0) +
             (p.source === "schema" ? 40 : 0) +
@@ -303,7 +380,10 @@ async function main() {
         // pull_number) before tools that merely return it nested in something else
         // (LIST_CHECK_RUNS_FOR_A_REF's pull_requests[].number).
         const home = clean.filter((p) => bySlug.get(p.tool)!.service === slotService);
+        // LIST_PUBLIC_REPOSITORIES lists all of GitHub; it is not where *your* repo comes from
+        const focused = home.filter((p) => entityMatches(bySlug.get(p.tool)!, slot) && !/_PUBLIC_/.test(p.tool));
         const pool = firstNonEmpty(
+          focused,
           home.filter((p) => entityMatches(bySlug.get(p.tool)!, slot)),
           home,
           clean,
@@ -311,6 +391,14 @@ async function main() {
           scored
         );
         const cap = (consumerCount.get(slot) ?? 0) > UBIQUITOUS_CONSUMERS ? UBIQUITOUS_FAN_IN_CAP : FAN_IN_CAP;
+        const rankedTools = new Set(
+          [...pool].sort((a, b) => b.score - a.score || a.tool.length - b.tool.length || a.tool.localeCompare(b.tool)).slice(0, cap).map((p) => p.tool)
+        );
+        for (const ref of req.docRefs) {
+          docAgreement.refs++;
+          if (rankedTools.has(ref)) docAgreement.foundRanked++;
+          if (allCandidates.some((p) => p.tool === ref)) docAgreement.foundAnywhere++;
+        }
         const ranked = pool
           .sort((a, b) => b.score - a.score || a.tool.length - b.tool.length || a.tool.localeCompare(b.tool))
           .slice(0, cap);
@@ -361,6 +449,7 @@ async function main() {
       toolCount: tools.length,
       nodeCount: nodes.size,
       edgeCount: edges.length,
+      docAgreement,
       method: `documented-refs + path-aware-slot-join + fan-in-cap(${FAN_IN_CAP}) + heuristic-producer-fallback`,
     },
     nodes: Array.from(nodes.values()),

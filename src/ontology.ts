@@ -227,7 +227,7 @@ const SLOT_TABLE: SlotDef[] = [
 
   // ---- photos ----
   { slot: "photos.album_id", service: "photos", patterns: [/^album_id$/], noun: "album" },
-  { slot: "photos.media_item_id", service: "photos", patterns: [/^media_item_id$/], noun: "mediaitem|media" },
+  { slot: "photos.media_item_id", service: "photos", patterns: [/^media_item_id$/], noun: "media_item" },
 
   // ---- people / contacts (cross-service: name -> email resolution) ----
   { slot: "people.contact_id", service: "people", patterns: [/^contact_id$/, /^person_id$/], noun: "contact" },
@@ -264,7 +264,7 @@ const SLOT_TABLE: SlotDef[] = [
   { slot: "github.issue_number", service: "github", patterns: [/^issue_number$/, /^issue_id$/], noun: "issue" },
   { slot: "github.pull_number", service: "github", patterns: [/^pull_number$/, /^pr_number$/, /^pull_request_number$/], noun: "pull|pr" },
   { slot: "github.review_id", service: "github", patterns: [/^review_id$/], noun: "review" },
-  { slot: "github.review_comment_id", service: "github", patterns: [/^review_comment_id$/], noun: "review" },
+  { slot: "github.review_comment_id", service: "github", patterns: [/^review_comment_id$/], noun: "review_comment" },
   { slot: "github.comment_id", service: "github", patterns: [/^comment_id$/], noun: "comment" },
   { slot: "github.discussion_number", service: "github", patterns: [/^discussion_number$/, /^discussion_id$/], noun: "discussion" },
   { slot: "github.milestone_number", service: "github", patterns: [/^milestone_number$/, /^milestone$/, /^milestone_id$/], noun: "milestone" },
@@ -276,8 +276,8 @@ const SLOT_TABLE: SlotDef[] = [
   { slot: "github.run_id", service: "github", patterns: [/^run_id$/, /^workflow_run_id$/], noun: "run" },
   { slot: "github.job_id", service: "github", patterns: [/^job_id$/], noun: "job" },
   { slot: "github.artifact_id", service: "github", patterns: [/^artifact_id$/], noun: "artifact" },
-  { slot: "github.check_run_id", service: "github", patterns: [/^check_run_id$/], noun: "check" },
-  { slot: "github.check_suite_id", service: "github", patterns: [/^check_suite_id$/], noun: "check" },
+  { slot: "github.check_run_id", service: "github", patterns: [/^check_run_id$/], noun: "check_run" },
+  { slot: "github.check_suite_id", service: "github", patterns: [/^check_suite_id$/], noun: "check_suite" },
   { slot: "github.runner_id", service: "github", patterns: [/^runner_id$/], noun: "runner" },
   { slot: "github.environment_name", service: "github", patterns: [/^environment_name$/, /^environment$/], noun: "environment" },
   { slot: "github.deployment_id", service: "github", patterns: [/^deployment_id$/], noun: "deployment" },
@@ -406,7 +406,9 @@ export function resolveOutputSlot(
     return { slot, primary: parents.length <= 1 || names(parent) || names(slugNoun) };
   }
   if (slugNoun) {
-    const slot = compose(slugNoun);
+    // two-word entities first: GET_CHECK_RUN's data.id is a check_run_id, not a run_id
+    const words = slugNoun.split("_");
+    const slot = (words.length > 1 ? compose(slugNoun) : null) ?? compose(words.at(-1)!);
     return slot ? { slot, primary: true } : null;
   }
   return null;
@@ -421,6 +423,14 @@ export function slotNouns(slot: string): string[] {
  *  "issues" matches "issue" without "username" matching "user". */
 export function tokenNamesNoun(token: string, noun: string): boolean {
   return token === noun || singularize(token) === noun;
+}
+
+/** Does the entity at the end of these slug tokens name the noun? Handles
+ *  two-word nouns: [list, check, runs] names "check_run", [get, dns, health, check] does not. */
+export function tailNamesNoun(tokens: string[], noun: string): boolean {
+  const width = noun.split("_").length;
+  if (tokens.length < width) return false;
+  return tokenNamesNoun(tokens.slice(-width).join("_"), noun);
 }
 
 /** Slots a tool of this service could plausibly produce — the search space for
