@@ -99,4 +99,4 @@ Remaining error classes seen in the held-out set: team slugs taken from branch-p
 - GitHub `owner`/`repo` edges are correct but ubiquitous: about a third of all edges, even capped at 2 sources each.
 - `CREATE_*` tools count as sources (create an issue, then comment on it). That's right for workflows, but noisy when only lookups are wanted.
 - Composite values (`properties/123`, A1 ranges) are treated as opaque slots.
-- Precision is measured on 235 hand labels in total. The held-out estimate has roughly ±7 points of sampling error for structural edges.
+- Precision is measured on 235 hand labels in total. The held-out structural estimate (60 labels) has a 95% interval of roughly ±10 points.
